@@ -13,6 +13,7 @@
 - Connected sockets are revalidated against the canonical API every 60 seconds. Changed identity/permissions, invalid credentials or verifier unavailability cause a subject-scoped disconnect.
 - Denial logs contain only a reason; they do not include tokens, tenant/user IDs, claims, join params or payloads.
 - Internal event endpoint has a separate configured bearer token and constant-time comparison.
+- Event ingestion is disabled by default through `PESAGUARD_EVENT_INGEST_ENABLED`; the controller returns `503` until an explicit Phase 4 approval enables it. A configured bearer token alone does not activate event broadcasting.
 - Event envelopes are structurally validated before broadcast.
 - Liveness is separate from readiness.
 
@@ -20,7 +21,7 @@
 
 The gateway's configured HTTPS validation client calls the canonical API's existing `GET /auth/verify` route. The route in `pesaguard_backend_pipeline/app_3_features.py` uses `@require_auth()` and returns `user_id`, `tenant_id`, `roles`, and `permissions`. The backend remains authoritative for HS256, `kid` key rotation, session/revocation state and account/authorization checks.
 
-Phase 3 authorization, tests, origin validation, rate limiting and socket revalidation are committed on the `phase-3-tenant-authorization` branch. **Formatting, compilation, tests and CI are not yet verified.** See [Phase 3 checklist](phase-3-checklist.md), [authentication integration contract](authentication.md), and [Phase 2 checklist](phase-2-checklist.md).
+Phase 3 authorization, tests, origin validation, rate limiting and socket revalidation are committed on the `phase-3-final-verification` branch. **Formatting, compilation, tests and CI are not yet verified.** See [Phase 3 checklist](phase-3-checklist.md), [authentication integration contract](authentication.md), and [Phase 2 checklist](phase-2-checklist.md).
 
 The canonical identity response does not currently establish arbitrary multi-tenant membership. This implementation deliberately supports only the single tenant in the verified response; it does not infer access from role names or add a cross-tenant override.
 
