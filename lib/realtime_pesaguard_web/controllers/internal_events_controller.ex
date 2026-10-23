@@ -25,8 +25,8 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
           :ok = Broadcaster.broadcast(event["tenant_id"], event)
           conn |> put_status(:accepted) |> json(%{accepted: true, event_id: event["event_id"]})
         else
-          {:error, reason} ->
-            conn |> put_status(:unprocessable_entity) |> json(%{error: inspect(reason)})
+          {:error, _reason} ->
+            conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid_event"})
         end
     end
   end
