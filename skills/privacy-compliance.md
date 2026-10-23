@@ -1,0 +1,3 @@
+# Privacy and Compliance Skill
+
+Identify personal, financial, identity and confidential business data. Collect only fields needed for a defined purpose. Document purpose, applicable lawful basis/consent, retention, deletion and access. Limit access by role and tenant. Mask data in logs, analytics, exports and support tools. Protect uploads with private storage, size/MIME validation and malware scanning or an explicit scanner-unavailable state. Do not send personal data to third-party AI without an approved policy and appropriate basis. Check Kenyan requirements against authoritative sources or qualified counsel. Never claim certification or legal compliance based only on code changes.
