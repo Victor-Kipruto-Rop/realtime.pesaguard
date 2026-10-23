@@ -1,38 +1,49 @@
 # Phase 3 — Tenant authorization checklist
 
 **Status: IMPLEMENTATION COMMITTED TO FEATURE BRANCH; VERIFICATION PENDING.**
-This status is not a release approval. No compile/test/CI result is implied.
+This is not a release approval. The current branch has not yet passed a verified format, compile, test and CI run.
 
 ## Implemented in this branch
 
-- [x] Socket authentication assigns the canonical backend response to `socket.assigns.verified_claims` (existing Phase 2 integration).
+- [x] Socket authentication assigns only identity fields returned by the canonical `GET /auth/verify` endpoint.
 - [x] The tenant channel accepts only the exact `tenant:<tenant_id>:transactions` topic shape.
 - [x] Requested tenant must exactly match the backend-validated `tenant_id`.
-- [x] The validated permission list must be a list of strings containing `read:transactions`.
-- [x] Missing/malformed claims, malformed tenant IDs, unsupported topics, and tenant mismatches fail closed.
-- [x] Client join params do not override the validated identity.
-- [x] Denial logs include only a reason, not tokens, user/tenant IDs, claims, params, or payloads.
-- [x] Regression tests cover allowed access, forged join params, cross-tenant access, missing identity/tenant, missing and malformed permissions, unsupported topics, and malformed tenant IDs.
-- [x] No event broadcasting or event-contract behavior was added in Phase 3.
+- [x] The verified permission list must be a list of strings containing `read:transactions`.
+- [x] Missing/malformed claims, malformed tenant IDs, unsupported topics and tenant mismatches fail closed.
+- [x] Client join params cannot override the verified tenant or permissions.
+- [x] Denial logs include only a reason code; tokens, identities, join params and payloads are not logged.
+- [x] Socket handshake rate limiting is implemented per peer IP: 30 attempts per 60-second window.
+- [x] Channel join rate limiting is implemented per peer IP: 60 attempts per 60-second window.
+- [x] The socket limits channels per transport and the limiter uses a bounded, periodically cleaned ETS table.
+- [x] Production runtime rejects missing origin configuration, non-HTTPS origins, wildcard origins and entries containing paths or query/fragment components.
+- [x] Render configuration explicitly allows the PesaGuard dashboard origin `https://app.pesaguard.co.ke`.
+- [x] Connected sockets are revalidated against the canonical API every 60 seconds. Invalid, changed, or unavailable identity validation disconnects the subject-scoped socket.
+- [x] Socket session tracking is cleaned up when the connection process exits; tokens are held in memory only and never logged.
+- [x] Regression tests cover tenant authorization and rate-limiter behavior.
+- [x] No event consumer, new event contract, or financial operation was introduced.
 
 ## Verification still required
 
 - [ ] Run `mix format --check-formatted`.
 - [ ] Run `mix compile --warnings-as-errors`.
-- [ ] Run `mix test` and confirm the configured coverage threshold.
-- [ ] Confirm GitHub Actions has a successful run for the final branch commit.
-- [ ] Verify the production `PESAGUARD_ALLOWED_ORIGINS` value and actual endpoint origin enforcement.
-- [ ] Add/verify connection and join rate limits.
-- [ ] Agree and implement a bounded strategy for disconnect/revalidation after token expiry, logout, session revocation, membership changes, or permission changes.
-- [ ] Perform a security review of all channel declarations and all paths that select tenant topics.
-- [ ] Confirm whether tenant IDs in the canonical API contract always satisfy the gateway's documented identifier format.
+- [ ] Run `mix test` and verify the configured coverage threshold.
+- [ ] Confirm a successful GitHub Actions run for the latest branch commit.
+- [ ] Verify Render has actually applied the `render.yaml` origin value and that the live Phoenix endpoint rejects disallowed browser origins.
+- [ ] Verify connection limits at the public proxy/load balancer. The in-process limiter is node-local, so multi-instance deployments need edge-level controls too.
+- [ ] Review the revalidation interval and capacity against expected concurrent socket volume.
+- [ ] Confirm canonical tenant IDs follow the accepted identifier format.
+- [ ] Complete a security review of every socket declaration and every tenant-topic selection path.
 
-## Security model and limitations
+## Trust model and limitations
 
-The current canonical `GET /auth/verify` contract returns the authenticated user's current `tenant_id`, roles, and permissions. It does not provide a complete organization-membership lookup contract. This implementation therefore authorizes only the single tenant explicitly present in the verified response; it does not add cross-tenant membership support or infer access from a role name.
+The canonical `GET /auth/verify` contract returns the authenticated user's current `tenant_id`, roles and permissions, but it does not provide a complete membership lookup for arbitrary tenants. This implementation intentionally authorizes only the single tenant in the verified response. It does not infer cross-tenant access from a role name and does not add a cross-tenant override.
 
-The only supported subscription is transaction read access. Other resource topics must not be enabled until their permissions and event contracts are agreed and tested. The gateway remains a transport layer and must not initiate, confirm, refund, move, or settle payments.
+The session monitor compares the refreshed identity and permissions with the claims captured at connection time. It disconnects the subject-scoped socket when those claims change or the verifier is unavailable. The check runs every 60 seconds; revocation is therefore not instantaneous, and the monitor must be load-tested before high-volume production use.
+
+The rate limiter is process-local and not a substitute for edge-level protection or a distributed quota service. The only supported subscription is transaction read access. Other resource topics must not be enabled until their permissions and event contracts are agreed and tested.
+
+The Python backend remains authoritative for M-Pesa ingestion, reconciliation, risk decisions and financial state. The gateway is transport-only and must never initiate, confirm, refund, move or settle payments.
 
 ## Release gate
 
-Keep production dashboard traffic off this gateway until Phase 2 and Phase 3 verification evidence is recorded, origin/abuse controls are confirmed, and the long-lived socket revocation limitation is addressed or explicitly accepted by the security owner.
+Keep production dashboard traffic off this gateway until Phase 2 and Phase 3 compile/test/CI evidence is recorded, live origin enforcement is confirmed, and operational limits are reviewed. Do not proceed to Phase 4 until the exit gate is satisfied.
