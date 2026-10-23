@@ -6,6 +6,7 @@ defmodule RealtimePesaguard.Application do
     children = [
       {Finch, name: RealtimePesaguard.Finch},
       RealtimePesaguard.Security.RateLimiter,
+      RealtimePesaguard.Events.IdempotencyGuard,
       RealtimePesaguard.Accounts.SocketSessionMonitor,
       {Phoenix.PubSub, name: RealtimePesaguard.PubSub},
       RealtimePesaguardWeb.Endpoint
