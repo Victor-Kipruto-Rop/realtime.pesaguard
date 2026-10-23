@@ -1,5 +1,9 @@
 # PesaGuard Real-Time Gateway — Project Phases
 
+## Mandatory execution prompts
+
+Before implementing any phase, follow [`prompts/README.md`](../prompts/README.md) and the matching `prompts/phase-NN-*.md` file. Each phase prompt contains scope locks, deliverables, acceptance checklists and a follow-up review prompt. Use [`prompts/follow-up-prompts.md`](../prompts/follow-up-prompts.md) for evidence-based verification and handoff. Do not treat a phase as complete without its exit-gate evidence.
+
 ## Mission and boundaries
 
 Build a separately deployable Elixir/Phoenix service for secure, low-latency delivery of PesaGuard events to authorized dashboard clients. The existing Python backend remains authoritative for M-Pesa ingestion, reconciliation, risk decisions, and financial records. PostgreSQL remains the authoritative store for persisted business state. Kafka/Redpanda is an event transport only after its real contracts and configuration are verified.
