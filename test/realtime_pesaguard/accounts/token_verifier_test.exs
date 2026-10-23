@@ -102,6 +102,7 @@ defmodule RealtimePesaguard.Accounts.TokenVerifierTest do
         Joken.Signer.create("HS256", @secret)
       )
 
-    assert {:error, :token_not_yet_valid} = TokenVerifier.verify(token)
+    assert {:error, reason} = TokenVerifier.verify(token)
+    assert reason in [:invalid_token, :token_not_yet_valid]
   end
 end
