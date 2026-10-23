@@ -25,9 +25,6 @@ if config_env() == :prod do
 
   config :realtime_pesaguard,
     event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
-    jwt_hs256_secret: System.get_env("PESAGUARD_JWT_HS256_SECRET"),
-    jwt_issuer: System.get_env("PESAGUARD_JWT_ISSUER"),
-    jwt_audience: System.get_env("PESAGUARD_JWT_AUDIENCE"),
     auth_validation_url:
       System.get_env("PESAGUARD_AUTH_VALIDATION_URL") ||
         raise("PESAGUARD_AUTH_VALIDATION_URL is required in production"),
