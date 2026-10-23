@@ -59,6 +59,15 @@ defmodule RealtimePesaguardWeb.InternalEventsControllerTest do
     assert_receive {:pesaguard_event, delivered}
     assert delivered["tenant_id"] == "tenant-a"
     assert delivered["payload"] == %{"transaction_id" => "tx-test", "state" => "FAILED"}
+
+    duplicate_conn =
+      Plug.Test.conn(:post, "/internal/events", event)
+      |> Plug.Conn.put_req_header("authorization", "Bearer configured-test-token")
+      |> InternalEventsController.create(event)
+
+    assert duplicate_conn.status == 409
+    assert Jason.decode!(duplicate_conn.resp_body) == %{"error" => "duplicate_event"}
+    refute_receive {:pesaguard_event, _duplicate_delivery}
   end
 
   test "rejects unregistered event types without exposing validator internals" do
