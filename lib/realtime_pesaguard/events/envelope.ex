@@ -24,8 +24,21 @@ defmodule RealtimePesaguard.Events.Envelope do
 
   # Verified against pesaguard_backend_pipeline/fraud_events.py:
   # publish_fraud_analysis_started emits only transaction_id and model_version.
-  @event_payload_fields %{
-    "fraud.analysis.started" => ~w(transaction_id model_version)
+  @event_payload_schemas %{
+    "fraud.analysis.started" => %{
+      required: ~w(transaction_id model_version),
+      allowed: ~w(transaction_id model_version)
+    },
+    "transaction.failed" => %{
+      required: ~w(transaction_id state),
+      allowed: ~w(transaction_id state),
+      state: "FAILED"
+    },
+    "transaction.rejected" => %{
+      required: ~w(transaction_id state),
+      allowed: ~w(transaction_id state),
+      state: "REJECTED"
+    }
   }
 
   def validate(%{} = event) do
@@ -40,7 +53,7 @@ defmodule RealtimePesaguard.Events.Envelope do
        event
        |> Map.take(@client_fields)
        |> Map.put("occurred_at", occurred_at)
-       |> Map.put("payload", Map.take(event["payload"], @event_payload_fields[event["event_type"]]))}
+       |> Map.put("payload", Map.take(event["payload"], @event_payload_schemas[event["event_type"]].allowed))}
     end
   end
 
@@ -101,7 +114,7 @@ defmodule RealtimePesaguard.Events.Envelope do
       event["schema_version"] != @schema_version ->
         {:error, :unsupported_schema_version}
 
-      event["event_type"] not in Map.keys(@event_payload_fields) ->
+      event["event_type"] not in Map.keys(@event_payload_schemas) ->
         {:error, :unsupported_event_type}
 
       true ->
@@ -130,7 +143,9 @@ defmodule RealtimePesaguard.Events.Envelope do
 
   defp validate_payload(event) do
     payload = event["payload"]
-    allowed = @event_payload_fields[event["event_type"]]
+    schema = @event_payload_schemas[event["event_type"]]
+    allowed = schema.allowed
+    missing = Enum.reject(schema.required, &Map.has_key?(payload || %{}, &1))
 
     cond do
       not is_map(payload) ->
@@ -139,11 +154,18 @@ defmodule RealtimePesaguard.Events.Envelope do
       Enum.any?(Map.keys(payload), &(not is_binary(&1) or &1 not in allowed)) ->
         {:error, :unknown_payload_fields}
 
+      missing != [] ->
+        {:error, {:missing_payload_fields, missing}}
+
       not valid_string?(payload["transaction_id"], 1, 160) ->
         {:error, :invalid_payload_transaction_id}
 
-      not valid_string?(payload["model_version"], 1, 80) ->
+      event["event_type"] == "fraud.analysis.started" and
+          not valid_string?(payload["model_version"], 1, 80) ->
         {:error, :invalid_payload_model_version}
+
+      Map.has_key?(schema, :state) and payload["state"] != schema.state ->
+        {:error, :invalid_payload_state}
 
       true ->
         :ok
