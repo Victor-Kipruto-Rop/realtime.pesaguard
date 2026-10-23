@@ -11,7 +11,9 @@ defmodule RealtimePesaguard.Events.Envelope do
   @event_version 1
   @schema_version "1.0"
 
-  @required ~w(event_id event_type event_version schema_version tenant_id aggregate_id correlation_id payload)
+  @required ~w(
+    event_id event_type event_version schema_version tenant_id aggregate_id correlation_id payload
+  )
   @allowed_fields ~w(
     event_id event_type event_version schema_version occurred_at timestamp tenant_id
     aggregate_id correlation_id payload request_id attempt max_attempts source
@@ -53,7 +55,10 @@ defmodule RealtimePesaguard.Events.Envelope do
        event
        |> Map.take(@client_fields)
        |> Map.put("occurred_at", occurred_at)
-       |> Map.put("payload", Map.take(event["payload"], @event_payload_schemas[event["event_type"]].allowed))}
+       |> Map.put(
+         "payload",
+         Map.take(event["payload"], @event_payload_schemas[event["event_type"]].allowed)
+       )}
     end
   end
 
@@ -146,7 +151,11 @@ defmodule RealtimePesaguard.Events.Envelope do
     schema = @event_payload_schemas[event["event_type"]]
     allowed = schema.allowed
     missing =
-      if is_map(payload), do: Enum.reject(schema.required, &Map.has_key?(payload, &1)), else: schema.required
+      if is_map(payload) do
+        Enum.reject(schema.required, &Map.has_key?(payload, &1))
+      else
+        schema.required
+      end
 
     cond do
       not is_map(payload) ->
