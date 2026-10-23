@@ -19,4 +19,4 @@ services:
       - key: PESAGUARD_AUTH_VALIDATION_URL
         value: https://api.pesaguard.co.ke/auth/verify
       - key: PESAGUARD_ALLOWED_ORIGINS
-        sync: false
+        value: https://app.pesaguard.co.ke
