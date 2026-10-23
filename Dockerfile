@@ -13,7 +13,7 @@ RUN mix compile
 RUN mix release
 
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends openssl libstdc++6 ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends openssl libstdc++6 ca-certificates curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV HOME=/app
 COPY --from=build /app/_build/prod/rel/realtime_pesaguard ./
