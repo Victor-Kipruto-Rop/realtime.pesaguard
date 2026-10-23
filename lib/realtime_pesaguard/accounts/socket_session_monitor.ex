@@ -6,7 +6,6 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   """
 
   use GenServer
-  require Logger
 
   alias RealtimePesaguard.Accounts.TokenVerifier
 
@@ -36,7 +35,6 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   def handle_call({:register, token, subject, pid}, _from, state) do
     state = remove_session(state, pid)
     monitor_ref = Process.monitor(pid)
-
     session = %{token: token, subject: subject, monitor_ref: monitor_ref}
     {:reply, :ok, put_in(state, [:sessions, pid], session)}
   end
@@ -50,29 +48,33 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   end
 
   def handle_info(:revalidate, state) do
-    results =
+    sessions =
       state.sessions
       |> Enum.map(fn {pid, session} -> {pid, session.token, session.subject} end)
+
+    results =
+      sessions
       |> Task.async_stream(
         fn {pid, token, subject} ->
           case TokenVerifier.verify(token) do
-            {:ok, %{"sub" => ^subject}} -> {pid, :valid}
-            _ -> {pid, :invalid}
+            {:ok, %{"sub" => ^subject}} -> :valid
+            _ -> :invalid
           end
         end,
         max_concurrency: @max_concurrency,
         timeout: @task_timeout_ms,
         on_timeout: :kill_task,
-        ordered: false
+        ordered: true
       )
+      |> Enum.zip(sessions)
       |> Enum.map(fn
-        {:ok, result} -> result
-        {:exit, _reason} -> {:unknown, :invalid}
+        {{:ok, :valid}, {pid, _token, _subject}} -> {pid, :valid}
+        {_failed_or_invalid, {pid, _token, _subject}} -> {pid, :invalid}
       end)
 
     invalid_pids =
       Enum.flat_map(results, fn
-        {pid, :invalid} when is_pid(pid) -> [pid]
+        {pid, :invalid} -> [pid]
         _ -> []
       end)
 
