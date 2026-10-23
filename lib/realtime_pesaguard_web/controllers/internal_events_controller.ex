@@ -19,12 +19,25 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
         conn |> put_status(:unauthorized) |> json(%{error: "unauthorized"})
 
       true ->
-        with {:ok, event} <- Envelope.validate(params) do
-          # This route is for trusted backend-to-gateway delivery only. The caller must
-          # derive tenant_id from its authenticated tenant context, never user input.
-          :ok = Broadcaster.broadcast(event["tenant_id"], event)
-          conn |> put_status(:accepted) |> json(%{accepted: true, event_id: event["event_id"]})
-        else
+        case Envelope.validate(params) do
+          {:ok, event} ->
+            # This route is for trusted backend-to-gateway delivery only. The caller must
+            # derive tenant_id from its authenticated tenant context, never user input.
+            case Broadcaster.broadcast(event["tenant_id"], event) do
+              :ok ->
+                conn
+                |> put_status(:accepted)
+                |> json(%{accepted: true, event_id: event["event_id"]})
+
+              {:error, :invalid_tenant_scope} ->
+                conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid_event"})
+
+              {:error, _reason} ->
+                conn
+                |> put_status(:service_unavailable)
+                |> json(%{error: "event_delivery_unavailable"})
+            end
+
           {:error, _reason} ->
             conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid_event"})
         end
