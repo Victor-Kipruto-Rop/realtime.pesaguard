@@ -29,7 +29,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [ ] Run `mix format --check-formatted`.
 - [ ] Run `mix compile --warnings-as-errors`.
 - [ ] Run `mix test` and verify the configured coverage threshold.
-- [ ] Obtain a successful GitHub Actions run for the latest branch commit. Run `40012248132` (commit `7eb1bb7`) and the latest observed run `40012302628` (commit `98ac396`) both failed in both jobs with no reported steps (`runner_id: 0`); job step data and downloadable logs are unavailable. A retry of the failed jobs was accepted by the API but did not yield a successful run. The cause is unconfirmed and no passing result is claimed.
+- [ ] Obtain a successful GitHub Actions run for the latest branch commit. Runs `40012248132` (commit `7eb1bb7`), `40012302628` (commit `98ac396`), and latest run `40013261647` (commit `974d07c`) all failed in both jobs with no reported steps (`runner_id: 0`); job step data and downloadable logs are unavailable. A retry of failed jobs was accepted by the API but did not yield a successful run. The cause is unconfirmed and no passing result is claimed.
 - [ ] Verify Render has actually applied the `render.yaml` origin value and that the live Phoenix endpoint rejects disallowed browser origins.
 - [ ] Verify connection limits at the public proxy/load balancer. The in-process limiter is node-local, so multi-instance deployments need edge-level controls too.
 - [ ] Review the revalidation interval and capacity against expected concurrent socket volume.
