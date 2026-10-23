@@ -1,0 +1,14 @@
+_build/
+deps/
+.cover/
+.env
+.env.*
+!.env.example
+.DS_Store
+erl_crash.dump
+/log/
+/tmp/
+/cover/
+/doc/
+/_build/
+/deps/
