@@ -29,7 +29,7 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
                 |> put_status(:accepted)
                 |> json(%{accepted: true, event_id: event["event_id"]})
 
-              {:error, :invalid_tenant_scope} ->
+              {:error, reason} when reason in [:invalid_tenant_scope, :invalid_event] ->
                 conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid_event"})
 
               {:error, _reason} ->
