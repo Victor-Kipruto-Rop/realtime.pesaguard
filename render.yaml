@@ -16,12 +16,6 @@ services:
         generateValue: true
       - key: PESAGUARD_EVENT_INGEST_TOKEN
         sync: false
-      - key: PESAGUARD_JWT_HS256_SECRET
-        sync: false
-      - key: PESAGUARD_JWT_ISSUER
-        sync: false
-      - key: PESAGUARD_JWT_AUDIENCE
-        sync: false
       - key: PESAGUARD_AUTH_VALIDATION_URL
         value: https://api.pesaguard.co.ke/auth/verify
       - key: PESAGUARD_ALLOWED_ORIGINS
