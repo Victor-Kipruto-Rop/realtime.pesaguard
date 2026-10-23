@@ -10,12 +10,12 @@
 - [x] Rejects unknown top-level fields, unsupported event types/versions, and non-allow-listed payload fields.
 - [x] Normalizes the legacy `timestamp` field to `occurred_at`.
 - [x] Reconstructs the browser event from an explicit allow-list; internal producer fields and metadata are not forwarded.
-- [x] Initial browser registry only allows `fraud.analysis.started`, backed by `fraud_events.py::publish_fraud_analysis_started`.
-- [x] Added regression tests for invalid versions, timestamps, tenant IDs, oversized payloads, and unknown fields.
+- [x] Initial browser registry allows `fraud.analysis.started`, `transaction.failed`, and `transaction.rejected`, each backed by inspected Python producer code and strict per-event payload schemas.
+- [x] Added regression tests for invalid versions, timestamps, tenant IDs, oversized payloads, unknown fields, lifecycle state mismatch, and the checked-in synthetic producer-contract fixture.
 
 ## Verification / release gates
 - [ ] Run formatter, compile and tests in a working pinned Elixir/OTP environment.
-- [ ] Verify fixture compatibility against the actual Python producer's `publish_fraud_analysis_started` output.
+- [ ] Run the checked-in synthetic fixture through the actual Python producer's serializer and compare outputs in an integration test.
 - [ ] Agree producer identity and tenant derivation; schema validation alone does not authenticate tenant scope.
 - [ ] Add signed/service-authenticated internal publishing and replay protection as part of Phase 8 before enabling ingress.
 - [ ] Keep `PESAGUARD_EVENT_INGEST_ENABLED=false` until producer contract, tenant trust, and delivery behavior pass integration tests.
