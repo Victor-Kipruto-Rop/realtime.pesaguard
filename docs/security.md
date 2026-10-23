@@ -13,8 +13,9 @@
 - Connected sockets are revalidated against the canonical API every 60 seconds. Changed identity/permissions, invalid credentials or verifier unavailability cause a subject-scoped disconnect.
 - Denial logs contain only a reason; they do not include tokens, tenant/user IDs, claims, join params or payloads.
 - Internal event endpoint has a separate configured bearer token and constant-time comparison.
+- Internal event ingestion has a bounded node-local rate limit and a 10-minute node-local event-ID deduplication guard; event-ID reuse across tenants is rejected. These controls are defense in depth only, not a distributed/durable idempotency guarantee. A shared durable replay/idempotency store and authenticated producer-to-tenant binding remain release blockers.
 - Event ingestion is disabled by default through `PESAGUARD_EVENT_INGEST_ENABLED`; the controller returns `503` until an explicit Phase 4 approval enables it. A configured bearer token alone does not activate event broadcasting.
-- Event envelopes are structurally validated before broadcast.
+- Event envelopes are structurally validated before broadcast, and the broadcaster revalidates the client-safe schema at the final broadcast boundary.
 - Liveness is separate from readiness.
 
 ## Authentication and authorization status
