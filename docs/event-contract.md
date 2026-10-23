@@ -4,7 +4,7 @@
 
 The Python backend repository `Victor-Kipruto-Rop/api.pesaguard` is authoritative for event production. Its `pesaguard_backend_pipeline/event_bus.py` defines `EventEnvelope`, event version `1`, and schema version `1.0`. Its `fraud_events.py` provides an explicit producer function `publish_fraud_analysis_started` whose payload contains `transaction_id` and `model_version`.
 
-The gateway's browser-delivery contract is intentionally narrower than the internal backend envelope. The gateway must not forward raw producer payloads or arbitrary metadata. **Only `fraud.analysis.started` is enabled in this initial registry.** This is not a claim that other producer event types are unsupported by the backend; they are simply not yet approved for browser delivery.
+The gateway's browser-delivery contract is intentionally narrower than the internal backend envelope. The gateway must not forward raw producer payloads or arbitrary metadata. **Only `fraud.analysis.started`, `transaction.failed`, and `transaction.rejected` are enabled in this initial registry.** This is not a claim that other producer event types are unsupported by the backend; they are simply not yet approved for browser delivery.
 
 ## Required client event envelope
 
@@ -30,7 +30,7 @@ Allowed payload fields (both required):
 - `transaction_id`: non-empty string, max 160 bytes.
 - `model_version`: non-empty string, max 80 bytes.
 
-The gateway rejects `features`, `rules_triggered`, phone/account identifiers, raw transaction data, free-form notes, arbitrary metadata, and every field not explicitly listed above. Other fraud and reconciliation event types stay blocked until their producer payloads and privacy requirements are reviewed field by field.
+The gateway rejects `features`, `rules_triggered`, phone/account identifiers, raw transaction data, free-form notes, arbitrary metadata, and every field not explicitly listed above. Other transaction, fraud, and reconciliation event types stay blocked until their producer payloads and privacy requirements are reviewed field by field.
 
 ## Tenant trust and ingestion gate
 
