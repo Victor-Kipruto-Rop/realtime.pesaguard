@@ -44,7 +44,12 @@ defmodule RealtimePesaguard.Events.IdempotencyGuard do
   @impl true
   def handle_call({:claim, event_id, tenant_id}, _from, state) do
     now = System.monotonic_time(:millisecond)
-    state = purge_expired(state, now)
+    state =
+      if map_size(state) >= @max_entries do
+        purge_expired(state, now)
+      else
+        state
+      end
 
     reply =
       case Map.get(state, event_id) do
@@ -78,7 +83,11 @@ defmodule RealtimePesaguard.Events.IdempotencyGuard do
   def handle_call({:complete, event_id, tenant_id}, _from, state) do
     case Map.get(state, event_id) do
       %{tenant_id: ^tenant_id, status: :pending} = entry ->
-        updated = %{entry | status: :delivered, expires_at: System.monotonic_time(:millisecond) + @ttl_ms}
+        updated = %{
+          entry
+          | status: :delivered,
+            expires_at: System.monotonic_time(:millisecond) + @ttl_ms
+        }
         {:reply, :ok, Map.put(state, event_id, updated)}
 
       %{tenant_id: ^tenant_id, status: :delivered} ->
