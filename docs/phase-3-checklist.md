@@ -13,7 +13,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [x] Client join params cannot override the verified tenant or permissions.
 - [x] Denial logs include only a reason code; tokens, identities, join params and payloads are not logged.
 - [x] Socket handshake rate limiting is implemented per peer IP: 30 attempts per 60-second window.
-- [x] Channel join rate limiting is implemented per peer IP: 60 attempts per 60-second window.
+- [x] Channel join rate limiting is implemented per authenticated subject: 60 attempts per 60-second window, avoiding reliance on forwarded client IP headers.
 - [x] The socket limits channels per transport and the limiter uses a bounded, periodically cleaned ETS table.
 - [x] Production runtime rejects missing origin configuration, non-HTTPS origins, wildcard origins and entries containing paths or query/fragment components.
 - [x] Render configuration explicitly allows the PesaGuard dashboard origin `https://app.pesaguard.co.ke`.
