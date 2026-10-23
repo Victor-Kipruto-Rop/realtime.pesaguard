@@ -1,0 +1,17 @@
+{
+  "event_id": "evt-test-fraud-started-001",
+  "event_type": "fraud.analysis.started",
+  "event_version": 1,
+  "schema_version": "1.0",
+  "occurred_at": "2026-10-23T10:00:00Z",
+  "tenant_id": "tenant-test-001",
+  "aggregate_id": "transaction-test-001",
+  "correlation_id": "corr-test-001",
+  "source": "pesaguard.fraud_events",
+  "producer": "pesaguard.fraud_events",
+  "producer_version": "1",
+  "payload": {
+    "transaction_id": "transaction-test-001",
+    "model_version": "risk-model-test-v1"
+  }
+}
