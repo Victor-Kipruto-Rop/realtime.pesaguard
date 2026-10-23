@@ -7,20 +7,29 @@ defmodule RealtimePesaguardWeb.UserSocket do
   strings. Do not put tokens in application logs or analytics.
   """
 
-  use Phoenix.Socket
+  use Phoenix.Socket, max_channels_per_transport: 5
 
-  alias RealtimePesaguard.Accounts.TokenVerifier
+  alias RealtimePesaguard.Accounts.{SocketSessionMonitor, TokenVerifier}
+  alias RealtimePesaguard.Security.RateLimiter
 
   channel "tenant:*", RealtimePesaguardWeb.TenantChannel
 
-  @impl true
-  def connect(%{"token" => token}, socket, _connect_info) when is_binary(token) do
-    case TokenVerifier.verify(token) do
-      {:ok, claims} ->
-        {:ok, assign(socket, :verified_claims, claims)}
+  @connect_limit 30
+  @window_ms 60_000
 
-      {:error, _reason} ->
-        :error
+  @impl true
+  def connect(%{"token" => token}, socket, connect_info) when is_binary(token) do
+    with ip when is_binary(ip) <- RateLimiter.client_ip(connect_info),
+         true <- RateLimiter.allow?(:socket_connect, ip, @connect_limit, @window_ms),
+         {:ok, claims} <- TokenVerifier.verify(token),
+         subject when is_binary(subject) <- claims["sub"],
+         :ok <- SocketSessionMonitor.register(token, subject, self()) do
+      {:ok,
+       socket
+       |> assign(:verified_claims, claims)
+       |> assign(:client_ip, ip)}
+    else
+      _ -> :error
     end
   end
 
