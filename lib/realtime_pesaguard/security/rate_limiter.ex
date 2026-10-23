@@ -31,7 +31,8 @@ defmodule RealtimePesaguard.Security.RateLimiter do
     bucket = {scope, key, window}
 
     try do
-      if :ets.info(@table, :size) >= @max_entries and :ets.lookup(@table, bucket) == [] do
+      if :ets.info(@table, :size) >= @max_entries and
+           :ets.lookup(@table, bucket) == [] do
         false
       else
         :ets.update_counter(@table, bucket, {2, 1}, {bucket, 0}) <= limit
