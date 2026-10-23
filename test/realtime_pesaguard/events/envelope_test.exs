@@ -50,6 +50,37 @@ defmodule RealtimePesaguard.Events.EnvelopeTest do
              Envelope.validate(valid_event(%{"event_type" => "reconciliation.completed"}))
   end
 
+  test "accepts safe transaction failure and rejection lifecycle summaries" do
+    for {event_type, state} <- [
+          {"transaction.failed", "FAILED"},
+          {"transaction.rejected", "REJECTED"}
+        ] do
+      event =
+        valid_event(%{
+          "event_type" => event_type,
+          "payload" => %{"transaction_id" => "tx-1", "state" => state}
+        })
+
+      assert {:ok, result} = Envelope.validate(event)
+      assert result["payload"] == %{"transaction_id" => "tx-1", "state" => state}
+    end
+  end
+
+  test "rejects lifecycle events with a mismatched state" do
+    event =
+      valid_event(%{
+        "event_type" => "transaction.failed",
+        "payload" => %{"transaction_id" => "tx-1", "state" => "COMPLETED"}
+      })
+
+    assert {:error, :invalid_payload_state} = Envelope.validate(event)
+  end
+
+  test "rejects non-string timestamps without raising" do
+    assert {:error, :invalid_occurred_at} =
+             Envelope.validate(valid_event(%{"occurred_at" => 1_766_000_000}))
+  end
+
   test "rejects unsupported contract versions" do
     assert {:error, :unsupported_event_version} =
              Envelope.validate(valid_event(%{"event_version" => 2}))
