@@ -12,6 +12,12 @@ Gateway flow:
 4. A 401/403 rejects the connection. Network errors, malformed responses, timeouts and 5xx responses fail closed as identity-validation unavailable.
 5. The gateway does not independently manage JWT signing keys or decode unverified claims. The backend remains the source of truth for token and account state.
 
+## Tenant authorization
+
+The channel currently supports only `tenant:<tenant_id>:transactions`. The requested tenant must exactly match the backend-verified `tenant_id`, and the verified `permissions` list must contain `read:transactions`. The topic is parsed strictly; generic tenant topics, other resource names, extra segments, malformed IDs and missing/malformed permissions are denied. Join params cannot override the verified tenant. Denials are logged using a reason code only.
+
+The current `GET /auth/verify` contract does not provide a complete organization-membership lookup for arbitrary tenants. Consequently, the gateway intentionally does not support cross-tenant membership, organization switching within an existing socket, or role-based overrides. Such support requires an explicit canonical membership contract and dedicated tests. See [Phase 3 checklist](phase-3-checklist.md).
+
 ## Configuration
 
 Set `PESAGUARD_AUTH_VALIDATION_URL` to the canonical API's `/auth/verify` endpoint. Production runtime requires this setting. Use HTTPS in production. The gateway no longer needs a copy of `JWT_SECRET_KEY` or `JWT_KEYS_JSON`; key rotation remains exclusively controlled by the backend.
@@ -22,7 +28,8 @@ The canonical endpoint response is not cached. This means a connection attempt d
 
 - The canonical endpoint validates the token at connection time; it does not automatically terminate an already-connected socket when a session is revoked. A bounded revalidation/forced-disconnect strategy is required before relying on immediate revocation for long-lived sockets.
 - The current gateway socket still accepts the token as a socket parameter. WSS and reverse-proxy/access-log redaction of query strings are required. A one-time socket-ticket exchange is preferable if supported by the canonical backend.
-- Tenant channel joins remain denied until Phase 3 implements authoritative tenant membership authorization. The authenticated `tenant_id` alone is not proof the user may join every requested tenant channel.
+- Confirm production origin enforcement against the configured `PESAGUARD_ALLOWED_ORIGINS` allow-list and add/verify connection and join rate limits.
 - Service/API-client principals should not be admitted to dashboard sockets unless a separate explicit policy is approved.
+- Elixir formatting, compilation, tests and CI evidence remain required before Phase 2/3 can pass their exit gates.
 
-No production traffic should be routed until Phase 2's real Elixir checks and CI evidence are recorded and the open gates above are resolved.
+No production traffic should be routed until the phase checklists' verification evidence and open security gates are resolved.
