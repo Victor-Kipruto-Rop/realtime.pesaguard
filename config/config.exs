@@ -12,6 +12,7 @@ config :realtime_pesaguard,
   jwt_hs256_secret: System.get_env("PESAGUARD_JWT_HS256_SECRET"),
   jwt_issuer: System.get_env("PESAGUARD_JWT_ISSUER"),
   jwt_audience: System.get_env("PESAGUARD_JWT_AUDIENCE"),
+  auth_validation_url: System.get_env("PESAGUARD_AUTH_VALIDATION_URL"),
   allowed_origins: allowed_origins
 
 config :realtime_pesaguard, RealtimePesaguardWeb.Endpoint,
