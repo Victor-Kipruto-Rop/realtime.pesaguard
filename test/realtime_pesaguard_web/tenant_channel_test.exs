@@ -4,7 +4,7 @@ defmodule RealtimePesaguardWeb.TenantChannelTest do
   alias RealtimePesaguardWeb.TenantChannel
 
   defp socket_with_claims(claims) do
-    %Phoenix.Socket{assigns: %{verified_claims: claims}}
+    %Phoenix.Socket{assigns: %{verified_claims: claims, client_ip: "192.0.2.10"}}
   end
 
   defp authorized_claims(overrides \\ %{}) do
