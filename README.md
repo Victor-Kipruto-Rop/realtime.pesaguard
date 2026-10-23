@@ -49,3 +49,45 @@ Never trust a client-supplied tenant ID for authorization. The tenant must come 
 6. Deploy alongside the Python backend and roll back by disabling gateway traffic; never change payment-processing behavior from this service.
 
 See `docs/architecture.md`, `docs/security.md`, and `docs/event-contract.md`.
+
+
+## Repository scaffold
+
+```text
+config/                         runtime configuration by environment
+lib/realtime_pesaguard/
+  accounts/                     canonical token-verifier adapter boundary
+  tenants/                      tenant authorization policy
+  events/                       event envelope validation
+  messaging/                    Kafka/Redpanda consumer boundary
+  notifications/                supported event routing
+  realtime/                     tenant-scoped Phoenix PubSub broadcasting
+  integrations/                 external adapter boundary
+  observability/                 metrics definitions
+  rate_limiting/                 rate-limit policy
+lib/realtime_pesaguard_web/
+  controllers/                  health and internal event endpoints
+  plugs/                        reusable security plugs
+  serializers/                  event payload allow-list boundary
+  channels/                     Phoenix tenant channel
+  endpoint.ex                   HTTP/WebSocket endpoint
+  router.ex                     HTTP routes
+  user_socket.ex                default-deny socket authentication
+assets/js/realtime/              browser client entry point
+test/
+  integration/                  dependency-backed integration tests
+  security/                     auth and cross-tenant tests
+  load/                         load/soak scenarios
+  realtime_pesaguard/            unit tests by domain
+  realtime_pesaguard_web/        endpoint/controller tests
+docs/                            architecture, auth, contracts, security, ops
+infra/
+  scripts/                       operational scripts
+  monitoring/                    dashboards and alert rules
+.github/workflows/               CI workflow
+Dockerfile                       container build
+docker-compose.dev.yml            local container setup
+render.yaml                      Render Blueprint starter
+```
+
+Directories marked with `.keep` are intentionally scaffold-only. Adapters and tests must be completed against real PesaGuard contracts before production use.
