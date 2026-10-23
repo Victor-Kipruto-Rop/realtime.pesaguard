@@ -29,7 +29,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [ ] Run `mix format --check-formatted`.
 - [ ] Run `mix compile --warnings-as-errors`.
 - [ ] Run `mix test` and verify the configured coverage threshold.
-- [ ] Obtain a successful GitHub Actions run for the latest branch commit. A fresh run was observed as failed, but the connector could not retrieve its job logs, so the cause is unknown and no passing result is claimed.
+- [ ] Obtain a successful GitHub Actions run for the latest branch commit. Run `40012248132` for `7eb1bb7` failed in both jobs within about two seconds with no reported steps (`runner_id: 0`); logs were unavailable. The cause is unconfirmed and no passing result is claimed.
 - [ ] Verify Render has actually applied the `render.yaml` origin value and that the live Phoenix endpoint rejects disallowed browser origins.
 - [ ] Verify connection limits at the public proxy/load balancer. The in-process limiter is node-local, so multi-instance deployments need edge-level controls too.
 - [ ] Review the revalidation interval and capacity against expected concurrent socket volume.
