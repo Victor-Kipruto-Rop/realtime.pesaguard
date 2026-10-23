@@ -111,3 +111,7 @@ docker build --tag realtime-pesaguard:local .
 ```
 
 See [local development](docs/development.md) and the [Phase 1 checklist](docs/phase-1-checklist.md) for setup and known verification gaps. A successful liveness response does not mean identity or event transport is ready.
+
+## Authentication status
+
+Phase 2 introduces a fail-closed HS256 JWT verifier for socket handshakes. It must only be configured after the canonical PesaGuard issuer contract is verified; asymmetric/JWKS or opaque-token identity systems require the matching adapter. Tenant channel joins remain denied until Phase 3 membership authorization. See [authentication contract](docs/authentication.md), [security controls](docs/security.md), and the [Phase 2 checklist](docs/phase-2-checklist.md). This gateway is not ready for production while identity interoperability and event transport remain unverified.
