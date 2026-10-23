@@ -4,10 +4,14 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
   alias RealtimePesaguard.Realtime.Broadcaster
 
   def create(conn, params) do
+    enabled? = Application.get_env(:realtime_pesaguard, :event_ingest_enabled, false)
     expected = Application.get_env(:realtime_pesaguard, :event_ingest_token)
     supplied = conn |> get_req_header("authorization") |> List.first() |> bearer_token()
 
     cond do
+      not enabled? ->
+        conn |> put_status(:service_unavailable) |> json(%{error: "event_ingest_disabled"})
+
       not is_binary(expected) or expected == "" ->
         conn |> put_status(:service_unavailable) |> json(%{error: "event_ingest_not_configured"})
 
@@ -30,8 +34,10 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
   defp bearer_token("Bearer " <> token), do: token
   defp bearer_token(_), do: nil
 
-  defp secure_equal?(expected, supplied) when is_binary(supplied) and byte_size(expected) == byte_size(supplied) do
+  defp secure_equal?(expected, supplied)
+       when is_binary(supplied) and byte_size(expected) == byte_size(supplied) do
     Plug.Crypto.secure_compare(expected, supplied)
   end
+
   defp secure_equal?(_, _), do: false
 end
