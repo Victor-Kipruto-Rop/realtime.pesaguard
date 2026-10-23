@@ -4,6 +4,10 @@ defmodule RealtimePesaguard.Accounts.TokenVerifierTest do
   alias RealtimePesaguard.Accounts.TokenVerifier
 
   @secret String.duplicate("test-secret-", 4)
+
+  defmodule BackendAuthStub do
+    def validate(_token), do: {:ok, %{"user_id" => "user-123", "tenant_id" => "tenant-456", "roles" => ["operator"], "permissions" => ["read:dashboard"]}}
+  end
   @issuer "https://identity.example.test"
   @audience "pesaguard-realtime"
 
@@ -15,6 +19,9 @@ defmodule RealtimePesaguard.Accounts.TokenVerifierTest do
       default_claims(iss: "https://identity.example.test", aud: "pesaguard-realtime", default_exp: 300)
       |> add_claim("sub", nil, &is_binary/1)
       |> add_claim("tenant_id", nil, &is_binary/1)
+      |> add_claim("type", "access", &(&1 == "access"))
+      |> add_claim("auth_version", 1, &is_integer/1)
+      |> add_claim("scope", "read:dashboard", &is_binary/1)
     end
   end
 
@@ -22,12 +29,14 @@ defmodule RealtimePesaguard.Accounts.TokenVerifierTest do
     previous = %{
       jwt_hs256_secret: Application.get_env(:realtime_pesaguard, :jwt_hs256_secret),
       jwt_issuer: Application.get_env(:realtime_pesaguard, :jwt_issuer),
-      jwt_audience: Application.get_env(:realtime_pesaguard, :jwt_audience)
+      jwt_audience: Application.get_env(:realtime_pesaguard, :jwt_audience),
+      backend_auth_client: Application.get_env(:realtime_pesaguard, :backend_auth_client)
     }
 
     Application.put_env(:realtime_pesaguard, :jwt_hs256_secret, @secret)
     Application.put_env(:realtime_pesaguard, :jwt_issuer, @issuer)
     Application.put_env(:realtime_pesaguard, :jwt_audience, @audience)
+    Application.put_env(:realtime_pesaguard, :backend_auth_client, BackendAuthStub)
 
     on_exit(fn ->
       Enum.each(previous, fn
