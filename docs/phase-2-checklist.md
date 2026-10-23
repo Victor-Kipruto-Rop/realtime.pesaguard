@@ -1,45 +1,37 @@
 # Phase 2 checklist — Authentication and identity
 
-**Status: BLOCKED — implementation is only partially compatible with the canonical issuer.**
+**Status: IMPLEMENTED, VERIFICATION PENDING; production gate remains closed.**
 
-## Verified from canonical backend source
+## Canonical backend contract
 
-Source inspected: `Victor-Kipruto-Rop/api.pesaguard/pesaguard_backend_pipeline/auth_rbac.py`.
+- [x] Inspected `pesaguard_backend_pipeline/auth_rbac.py`: HS256, configurable issuer/audience, `kid` key rotation, short-lived access tokens and required claims.
+- [x] Inspected the existing `GET /auth/verify` route in `pesaguard_backend_pipeline/app_3_features.py`. It uses `@require_auth()` and returns authenticated user ID, tenant ID, roles and permissions after backend token validation.
+- [x] Chose server-side validation rather than duplicating JWT key management or connecting the gateway directly to the private database.
 
-- [x] Confirmed HS256 as the issuer algorithm.
-- [x] Confirmed default issuer `pesaguard` and audience `pesaguard-api`, both configurable in the backend.
-- [x] Confirmed signing key selection uses `JWT_SECRET_KEY` or `JWT_KEYS_JSON`, with active `JWT_ACTIVE_KID` and JWT header `kid`.
-- [x] Confirmed required access-token claims include `exp`, `iat`, `nbf`, `jti`, `sub`, `tenant_id`, `type`, `iss`, `aud`, `auth_version`, and `scope`.
-- [x] Confirmed access token TTL is limited to 1–15 minutes and backend authentication checks persisted session and account/authorization state.
+## Gateway implementation
 
-## Gateway implementation already present
+- [x] Added a Finch HTTP client for canonical backend token validation with bounded request timeouts.
+- [x] Gateway token verifier delegates validation to the canonical API; it does not trust decoded client claims.
+- [x] Only non-empty `user_id` and `tenant_id` from the authoritative API response become socket identity claims.
+- [x] Invalid token responses reject the connection; validation-service failures fail closed.
+- [x] Production runtime requires `PESAGUARD_AUTH_VALIDATION_URL`; Render configuration points to the canonical `/auth/verify` route.
+- [x] Removed duplicated gateway JWT secret/issuer/audience configuration to avoid split key management.
+- [x] Added verifier tests for accepted identity, invalid token, backend outage, oversized token and invalid input.
+- [x] Internal event-ingest bearer authentication remains separate from dashboard-user identity.
 
-- [x] Fail-closed HS256 verifier using Joken.
-- [x] Issuer/audience, expiry, optional not-before, and non-empty `sub` / `tenant_id` checks.
-- [x] Phoenix socket connection authenticates using the verifier and assigns verified claims only.
-- [x] Missing verifier configuration rejects socket connections.
-- [x] Tenant channel joins remain denied pending Phase 3 authorization.
-- [x] Unit tests exist for locally signed valid/malformed/wrong-secret/missing-config/missing-tenant/expired/future-`nbf` tokens.
-- [x] Documentation records the canonical issuer contract and outstanding incompatibilities.
+## Remaining acceptance gates
 
-## Required — not yet satisfied
-
-- [ ] Implement the issuer's `kid`-based configured signing-key map and key rotation behavior.
-- [ ] Require and validate all canonical access-token claims, including `type == "access"`, `iat`, `nbf`, `jti`, `auth_version`, and `scope`.
-- [ ] Establish an approved backend validation/introspection API for current session, token revocation, account status and authorization version. The gateway must not directly access the backend's private database.
-- [ ] Define how human user tokens differ from service/API-client tokens and what gateway principal types are allowed.
-- [ ] Add issuer-compatible contract tests, including active/previous key rotation and unknown `kid`.
-- [ ] Add negative tests for wrong issuer, wrong audience, unsupported algorithm, missing canonical claims, invalid token type, revoked session/account, stale authorization version, and validation-service outage.
-- [ ] Review WebSocket credential transport and ensure access/query logs redact token-bearing parameters; implement one-time socket tickets if required by the approved auth flow.
-- [ ] Run `mix format --check-formatted`, `mix compile --warnings-as-errors`, and `mix test` in an Elixir environment.
+- [ ] Run `mix format --check-formatted`, `mix compile --warnings-as-errors`, and `mix test` in a real Elixir environment.
 - [ ] Verify the actual GitHub Actions run and record its URL/status.
+- [ ] Confirm production uses HTTPS and reverse-proxy logs redact socket query parameters; consider one-time socket tickets.
+- [ ] Define bounded revalidation/forced disconnect for already-connected sockets after session revocation.
+- [ ] Confirm canonical `/auth/verify` is reachable from the deployed gateway service and its response shape matches the implemented client.
+- [ ] Tenant channel joins remain denied until Phase 3 authorization is implemented.
 
-## Release gate
+## Release decision
 
-Do not mark Phase 2 complete until every required item is evidenced. If the canonical backend has no supported session/revocation validation API, Phase 2 remains blocked until an approved contract is created. Do not implement an undocumented endpoint by assumption.
-
-Tenant channel joins must remain denied until Phase 3 authorization passes its own acceptance gate. No production dashboard traffic may be routed through the gateway while this phase is blocked.
+Phase 2 code integration is implemented but **not verified complete** because tests/compile/CI have not been run from this environment. Production dashboard traffic must remain disabled until those checks pass and the open operational gates are reviewed. Do not begin Phase 3 automatically.
 
 ## Verification record
 
-No Elixir commands were run as part of this documentation update. No test, compile, Docker build, or CI result is claimed here.
+GitHub file commits succeeded. No Elixir commands, Docker build, deployment, or CI run were executed by this change; no successful test/build claim is made.
