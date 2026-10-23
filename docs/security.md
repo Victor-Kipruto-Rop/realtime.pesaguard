@@ -8,7 +8,7 @@
 - Only backend-returned user and tenant identity are assigned to the socket; client-supplied tenant parameters are not trusted as identity.
 - The Phase 3 tenant channel permits only `tenant:<tenant_id>:transactions` when the requested tenant exactly matches the verified backend tenant and the verified permissions include `read:transactions`.
 - Unsupported topics, missing/malformed claims, malformed tenant identifiers, missing permissions and cross-tenant joins are denied by default.
-- Socket handshake and channel join rate limits are implemented per peer IP using a bounded, periodically cleaned ETS table. Limits are node-local; production multi-instance deployments also require edge-level controls.
+- Socket handshake rate limits are implemented per peer IP, and channel join limits per authenticated subject, using a bounded, periodically cleaned ETS table. Limits are node-local; production multi-instance deployments also require edge-level controls.
 - Production runtime requires explicit exact HTTPS origins and rejects wildcard/path/query/fragment entries. Render configuration specifies `https://app.pesaguard.co.ke`.
 - Connected sockets are revalidated against the canonical API every 60 seconds. Changed identity/permissions, invalid credentials or verifier unavailability cause a subject-scoped disconnect.
 - Denial logs contain only a reason; they do not include tokens, tenant/user IDs, claims, join params or payloads.
