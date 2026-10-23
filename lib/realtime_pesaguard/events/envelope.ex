@@ -145,7 +145,8 @@ defmodule RealtimePesaguard.Events.Envelope do
     payload = event["payload"]
     schema = @event_payload_schemas[event["event_type"]]
     allowed = schema.allowed
-    missing = Enum.reject(schema.required, &Map.has_key?(payload || %{}, &1))
+    missing =
+      if is_map(payload), do: Enum.reject(schema.required, &Map.has_key?(payload, &1)), else: schema.required
 
     cond do
       not is_map(payload) ->
