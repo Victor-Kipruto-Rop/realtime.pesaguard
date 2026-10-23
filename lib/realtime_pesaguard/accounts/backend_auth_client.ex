@@ -4,10 +4,8 @@ defmodule RealtimePesaguard.Accounts.BackendAuthClient do
   This call is required to enforce persisted session, revocation and account state.
   """
 
-  @behaviour RealtimePesaguard.Accounts.TokenVerifier
   @max_response_bytes 65_536
 
-  @impl true
   def validate(token) when is_binary(token) do
     with {:ok, url} <- configured_url(),
          request <- Finch.build(:get, url, [
