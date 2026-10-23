@@ -112,15 +112,19 @@ defmodule RealtimePesaguard.Events.Envelope do
   defp timestamp(event) do
     value = event["occurred_at"] || event["timestamp"]
 
-    case DateTime.from_iso8601(value || "") do
-      {:ok, datetime, 0} ->
-        {:ok, DateTime.to_iso8601(datetime)}
+    if is_binary(value) do
+      case DateTime.from_iso8601(value) do
+        {:ok, datetime, 0} ->
+          {:ok, DateTime.to_iso8601(datetime)}
 
-      {:ok, _datetime, _offset} ->
-        {:error, :timestamp_must_be_utc}
+        {:ok, _datetime, _offset} ->
+          {:error, :timestamp_must_be_utc}
 
-      {:error, _reason} ->
-        {:error, :invalid_occurred_at}
+        {:error, _reason} ->
+          {:error, :invalid_occurred_at}
+      end
+    else
+      {:error, :invalid_occurred_at}
     end
   end
 
