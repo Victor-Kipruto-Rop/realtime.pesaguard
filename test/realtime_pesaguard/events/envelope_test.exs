@@ -109,7 +109,11 @@ defmodule RealtimePesaguard.Events.EnvelopeTest do
   end
 
   test "rejects payload fields not explicitly allow-listed" do
-    payload = %{"transaction_id" => "tx-1", "model_version" => "risk-v1", "features" => %{"phone" => "sensitive"}}
+    payload = %{
+      "transaction_id" => "tx-1",
+      "model_version" => "risk-v1",
+      "features" => %{"phone" => "sensitive"}
+    }
 
     assert {:error, :unknown_payload_fields} =
              Envelope.validate(valid_event(%{"payload" => payload}))
@@ -125,7 +129,13 @@ defmodule RealtimePesaguard.Events.EnvelopeTest do
   end
 
   test "rejects oversized events" do
-    oversized = valid_event(%{"payload" => %{"transaction_id" => "tx-1", "model_version" => String.duplicate("x", 70_000)}})
+    oversized =
+      valid_event(%{
+        "payload" => %{
+          "transaction_id" => "tx-1",
+          "model_version" => String.duplicate("x", 70_000)
+        }
+      })
     assert {:error, :event_too_large} = Envelope.validate(oversized)
   end
 
