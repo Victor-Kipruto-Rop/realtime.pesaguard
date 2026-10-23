@@ -2,9 +2,9 @@ defmodule RealtimePesaguard.Events.Envelope do
   @moduledoc """
   Strict client-delivery contract for events published by the canonical PesaGuard backend.
 
-  This initial registry intentionally enables only the producer event whose payload
-  has been inspected and can be minimized safely. Other producer event types remain
-  rejected until their dashboard payload contracts are reviewed and added explicitly.
+  This initial registry intentionally enables only three producer event types whose
+  payloads have been inspected and can be minimized safely. Other producer event types
+  remain rejected until their dashboard payload contracts are reviewed explicitly.
   """
 
   @max_event_bytes 65_536
