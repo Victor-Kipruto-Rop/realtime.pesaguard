@@ -18,6 +18,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [x] Production runtime rejects missing origin configuration, non-HTTPS origins, wildcard origins and entries containing paths or query/fragment components.
 - [x] Render configuration explicitly allows the PesaGuard dashboard origin `https://app.pesaguard.co.ke`.
 - [x] Connected sockets are revalidated against the canonical API every 60 seconds. Invalid, changed, or unavailable identity validation disconnects the subject-scoped socket.
+- [x] The monitor caps tracked live socket sessions at 10,000 per node and rejects additional registrations when full.
 - [x] Socket session tracking is cleaned up when the connection process exits; tokens are held in memory only and never logged.
 - [x] Regression tests cover tenant authorization and rate-limiter behavior.
 - [x] No event consumer, new event contract, or financial operation was introduced.
