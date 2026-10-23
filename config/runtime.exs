@@ -38,6 +38,7 @@ if config_env() == :prod do
 
   config :realtime_pesaguard,
     event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
+    event_ingest_enabled: System.get_env("PESAGUARD_EVENT_INGEST_ENABLED") == "true",
     auth_validation_url:
       System.get_env("PESAGUARD_AUTH_VALIDATION_URL") ||
         raise("PESAGUARD_AUTH_VALIDATION_URL is required in production"),
