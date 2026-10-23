@@ -49,4 +49,4 @@ The Python backend remains authoritative for M-Pesa ingestion, reconciliation, r
 
 ## Release gate
 
-Keep production dashboard traffic off this gateway until Phase 2 and Phase 3 compile/test/CI evidence is recorded, live origin enforcement is confirmed, and operational limits are reviewed. Do not proceed to Phase 4 until the exit gate is satisfied.
+Keep production dashboard traffic off this gateway until Phase 2 and Phase 3 compile/test/CI evidence is recorded, live origin enforcement is confirmed, and operational limits are reviewed. Phase 4 contract development has been prepared on this feature branch at the user's direction, but Phase 3 remains unverified. Do not enable event ingestion or production delivery until Phase 3's exit gate and Phase 4's contract/producer trust gates are satisfied.
