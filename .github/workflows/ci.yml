@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.16.3"
+          otp-version: "26.2.5"
+      - run: mix local.hex --force
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix test
