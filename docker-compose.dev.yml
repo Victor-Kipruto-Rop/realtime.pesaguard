@@ -1,0 +1,19 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      MIX_ENV: prod
+      PORT: "4000"
+      PHX_HOST: localhost
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-local-only-secret-key-base-change-before-use}
+      PESAGUARD_EVENT_INGEST_TOKEN: ${PESAGUARD_EVENT_INGEST_TOKEN:-}
+      PESAGUARD_ALLOWED_ORIGINS: ${PESAGUARD_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
