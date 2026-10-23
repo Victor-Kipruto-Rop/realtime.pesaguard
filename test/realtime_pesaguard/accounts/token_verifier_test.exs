@@ -3,115 +3,54 @@ defmodule RealtimePesaguard.Accounts.TokenVerifierTest do
 
   alias RealtimePesaguard.Accounts.TokenVerifier
 
-  @secret String.duplicate("test-secret-", 4)
-
   defmodule BackendAuthStub do
-    def validate(_token), do: {:ok, %{"user_id" => "user-123", "tenant_id" => "tenant-456", "roles" => ["operator"], "permissions" => ["read:dashboard"]}}
-  end
-  @issuer "https://identity.example.test"
-  @audience "pesaguard-realtime"
-
-  defmodule TestToken do
-    use Joken.Config
-
-    @impl Joken.Config
-    def token_config do
-      default_claims(iss: "https://identity.example.test", aud: "pesaguard-realtime", default_exp: 300)
-      |> add_claim("sub", nil, &is_binary/1)
-      |> add_claim("tenant_id", nil, &is_binary/1)
-      |> add_claim("type", "access", &(&1 == "access"))
-      |> add_claim("auth_version", 1, &is_integer/1)
-      |> add_claim("scope", "read:dashboard", &is_binary/1)
+    def validate("valid-token") do
+      {:ok,
+       %{
+         "user_id" => "user-123",
+         "tenant_id" => "tenant-456",
+         "roles" => ["operator"],
+         "permissions" => ["read:dashboard"]
+       }}
     end
+
+    def validate("unavailable-token"), do: {:error, :identity_validation_unavailable}
+    def validate(_), do: {:error, :invalid_token}
   end
 
   setup do
-    previous = %{
-      jwt_hs256_secret: Application.get_env(:realtime_pesaguard, :jwt_hs256_secret),
-      jwt_issuer: Application.get_env(:realtime_pesaguard, :jwt_issuer),
-      jwt_audience: Application.get_env(:realtime_pesaguard, :jwt_audience),
-      backend_auth_client: Application.get_env(:realtime_pesaguard, :backend_auth_client)
-    }
-
-    Application.put_env(:realtime_pesaguard, :jwt_hs256_secret, @secret)
-    Application.put_env(:realtime_pesaguard, :jwt_issuer, @issuer)
-    Application.put_env(:realtime_pesaguard, :jwt_audience, @audience)
+    previous = Application.get_env(:realtime_pesaguard, :backend_auth_client)
     Application.put_env(:realtime_pesaguard, :backend_auth_client, BackendAuthStub)
 
     on_exit(fn ->
-      Enum.each(previous, fn
-        {key, nil} -> Application.delete_env(:realtime_pesaguard, key)
-        {key, value} -> Application.put_env(:realtime_pesaguard, key, value)
-      end)
+      case previous do
+        nil -> Application.delete_env(:realtime_pesaguard, :backend_auth_client)
+        value -> Application.put_env(:realtime_pesaguard, :backend_auth_client, value)
+      end
     end)
 
     :ok
   end
 
-  test "accepts a correctly signed token with required identity claims" do
-    assert {:ok, token, _claims} =
-             Joken.generate_and_sign(TestToken, %{"sub" => "user-123", "tenant_id" => "tenant-456"},
-               Joken.Signer.create("HS256", @secret)
-             )
-
-    assert {:ok, claims} = TokenVerifier.verify(token)
+  test "accepts only identity returned by canonical backend validation" do
+    assert {:ok, claims} = TokenVerifier.verify("valid-token")
     assert claims["sub"] == "user-123"
     assert claims["tenant_id"] == "tenant-456"
-    assert claims["iss"] == @issuer
-    assert claims["aud"] == @audience
+    assert claims["roles"] == ["operator"]
+    assert claims["permissions"] == ["read:dashboard"]
   end
 
-  test "rejects malformed tokens" do
-    assert {:error, :invalid_token} = TokenVerifier.verify("not-a-jwt")
+  test "rejects a token the canonical backend rejects" do
+    assert {:error, :invalid_token} = TokenVerifier.verify("forged-token")
   end
 
-  test "rejects a token signed with the wrong secret" do
-    {:ok, token, _claims} =
-      Joken.generate_and_sign(TestToken, %{"sub" => "user-123", "tenant_id" => "tenant-456"},
-        Joken.Signer.create("HS256", "a-different-secret-that-is-long-enough")
-      )
-
-    assert {:error, :invalid_token} = TokenVerifier.verify(token)
+  test "fails closed when canonical validation is unavailable" do
+    assert {:error, :identity_validation_unavailable} =
+             TokenVerifier.verify("unavailable-token")
   end
 
-  test "fails closed when verifier configuration is missing" do
-    Application.delete_env(:realtime_pesaguard, :jwt_hs256_secret)
-    assert {:error, :identity_verifier_not_configured} = TokenVerifier.verify("any-token")
-  end
-
-  test "rejects tokens missing tenant identity" do
-    {:ok, token, _claims} =
-      Joken.generate_and_sign(TestToken, %{"sub" => "user-123"},
-        Joken.Signer.create("HS256", @secret)
-      )
-
-    assert {:error, _reason} = TokenVerifier.verify(token)
-  end
-
-  test "rejects expired tokens" do
-    expired = System.system_time(:second) - 60
-
-    {:ok, token, _claims} =
-      Joken.generate_and_sign(
-        TestToken,
-        %{"sub" => "user-123", "tenant_id" => "tenant-456", "exp" => expired},
-        Joken.Signer.create("HS256", @secret)
-      )
-
-    assert {:error, :invalid_token} = TokenVerifier.verify(token)
-  end
-
-  test "rejects tokens that are not yet valid" do
-    future = System.system_time(:second) + 300
-
-    {:ok, token, _claims} =
-      Joken.generate_and_sign(
-        TestToken,
-        %{"sub" => "user-123", "tenant_id" => "tenant-456", "nbf" => future},
-        Joken.Signer.create("HS256", @secret)
-      )
-
-    assert {:error, reason} = TokenVerifier.verify(token)
-    assert reason in [:invalid_token, :token_not_yet_valid]
+  test "rejects oversized and non-binary tokens before contacting backend" do
+    assert {:error, :invalid_token} = TokenVerifier.verify(String.duplicate("x", 16_385))
+    assert {:error, :invalid_token} = TokenVerifier.verify(nil)
   end
 end
