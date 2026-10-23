@@ -22,6 +22,14 @@ Maximum encoded input event size is 65,536 bytes. Unknown top-level fields, unsu
 
 ## Initial allow-list
 
+### `transaction.failed` and `transaction.rejected`
+
+Evidence: `pesaguard_backend_pipeline/lifecycle_events.py::pending_lifecycle_event`. The backend constructs payloads with exactly `transaction_id` and a terminal `state`. The gateway requires `state="FAILED"` for `transaction.failed` and `state="REJECTED"` for `transaction.rejected`.
+
+Allowed payload fields (both required):
+- `transaction_id`: non-empty string, max 160 bytes.
+- `state`: exact event-specific terminal state.
+
 ### `fraud.analysis.started`
 
 Evidence: `pesaguard_backend_pipeline/fraud_events.py::publish_fraud_analysis_started`.
