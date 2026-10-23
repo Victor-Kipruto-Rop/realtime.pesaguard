@@ -91,3 +91,23 @@ render.yaml                      Render Blueprint starter
 ```
 
 Directories marked with `.keep` are intentionally scaffold-only. Adapters and tests must be completed against real PesaGuard contracts before production use.
+
+
+## Development quality gates
+
+Run the shared quality gate before opening a change:
+
+```sh
+mix check
+```
+
+Or run the steps separately:
+
+```sh
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+docker build --tag realtime-pesaguard:local .
+```
+
+See [local development](docs/development.md) and the [Phase 1 checklist](docs/phase-1-checklist.md) for setup and known verification gaps. A successful liveness response does not mean identity or event transport is ready.
