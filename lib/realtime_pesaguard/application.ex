@@ -11,7 +11,7 @@ defmodule RealtimePesaguard.Application do
       RealtimePesaguardWeb.Endpoint
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: RealtimePesaguard.Supervisor)
+    Supervisor.start_link(children, strategy: :rest_for_one, name: RealtimePesaguard.Supervisor)
   end
 
   @impl true
