@@ -9,7 +9,11 @@ defmodule RealtimePesaguardWeb.TenantChannelTest do
 
   defp authorized_claims(overrides \\ %{}) do
     Map.merge(
-      %{"user_id" => "user-1", "tenant_id" => "tenant-a", "permissions" => ["read:transactions"]},
+      %{
+        "sub" => "user-1",
+        "tenant_id" => "tenant-a",
+        "permissions" => ["read:transactions"]
+      },
       overrides
     )
   end
@@ -82,7 +86,11 @@ defmodule RealtimePesaguardWeb.TenantChannelTest do
   end
 
   test "denies generic, unknown, and extra-segment topics" do
-    for topic <- ["tenant:tenant-a", "tenant:tenant-a:reports", "tenant:tenant-a:transactions:all"] do
+    for topic <- [
+          "tenant:tenant-a",
+          "tenant:tenant-a:reports",
+          "tenant:tenant-a:transactions:all"
+        ] do
       assert {:error, %{reason: "unauthorized"}} =
                TenantChannel.join(topic, %{}, socket_with_claims(authorized_claims()))
     end
