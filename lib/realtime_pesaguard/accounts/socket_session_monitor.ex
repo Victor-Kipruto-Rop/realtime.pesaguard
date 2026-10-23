@@ -36,7 +36,12 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   def handle_call({:register, token, claims, pid}, _from, state) do
     state = remove_session(state, pid)
     monitor_ref = Process.monitor(pid)
-    session = %{token: token, claims: claims, subject: claims["sub"], monitor_ref: monitor_ref}
+    session = %{
+      token: token,
+      claims: claims,
+      subject: claims["sub"],
+      monitor_ref: monitor_ref
+    }
     {:reply, :ok, put_in(state, [:sessions, pid], session)}
   end
 
