@@ -35,15 +35,21 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
 
   @impl true
   def handle_call({:register, token, claims, pid}, _from, state) do
-    state = remove_session(state, pid)
-    monitor_ref = Process.monitor(pid)
-    session = %{
-      token: token,
-      claims: claims,
-      subject: claims["sub"],
-      monitor_ref: monitor_ref
-    }
-    {:reply, :ok, put_in(state, [:sessions, pid], session)}
+    if map_size(state.sessions) >= @max_sessions and not Map.has_key?(state.sessions, pid) do
+      {:reply, {:error, :capacity_exceeded}, state}
+    else
+      state = remove_session(state, pid)
+      monitor_ref = Process.monitor(pid)
+
+      session = %{
+        token: token,
+        claims: claims,
+        subject: claims["sub"],
+        monitor_ref: monitor_ref
+      }
+
+      {:reply, :ok, put_in(state, [:sessions, pid], session)}
+    end
   end
 
   @impl true
