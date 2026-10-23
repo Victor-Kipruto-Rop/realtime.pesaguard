@@ -22,7 +22,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [x] Socket session tracking is cleaned up when the connection process exits; tokens are held in memory only and never logged.
 - [x] Regression tests cover tenant authorization and rate-limiter behavior.
 - [x] Event ingestion is explicitly disabled by default; a bearer token alone cannot activate broadcast delivery before Phase 4 approval.
-- [x] No event consumer, new event contract, or financial operation was introduced.
+- [x] No Kafka consumer or financial operation was introduced; strict browser-delivery event contracts are being developed separately and remain gated.
 
 ## Verification still required
 
