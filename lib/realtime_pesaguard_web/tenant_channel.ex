@@ -17,15 +17,16 @@ defmodule RealtimePesaguardWeb.TenantChannel do
 
   @impl true
   def join(topic, _params, socket) do
-    ip = socket.assigns[:client_ip]
+    claims = socket.assigns[:verified_claims]
+    subject = if is_map(claims), do: claims["sub"], else: nil
 
     result =
-      with true <- is_binary(ip),
-           true <- RateLimiter.allow?(:channel_join, ip, @join_limit, @window_ms),
-           :ok <- authorize(topic, socket.assigns[:verified_claims]) do
+      with true <- is_binary(subject),
+           true <- RateLimiter.allow?(:channel_join, subject, @join_limit, @window_ms),
+           :ok <- authorize(topic, claims) do
         :ok
       else
-        false -> {:error, "join_rate_limit_or_client_ip_unavailable"}
+        false -> {:error, "join_rate_limit_or_identity_unavailable"}
         {:error, reason} -> {:error, reason}
       end
 
