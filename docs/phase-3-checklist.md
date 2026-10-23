@@ -21,6 +21,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [x] The monitor caps tracked live socket sessions at 10,000 per node and rejects additional registrations when full.
 - [x] Socket session tracking is cleaned up when the connection process exits; tokens are held in memory only and never logged.
 - [x] Regression tests cover tenant authorization and rate-limiter behavior.
+- [x] Event ingestion is explicitly disabled by default; a bearer token alone cannot activate broadcast delivery before Phase 4 approval.
 - [x] No event consumer, new event contract, or financial operation was introduced.
 
 ## Verification still required
@@ -34,6 +35,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [ ] Review the revalidation interval and capacity against expected concurrent socket volume.
 - [ ] Confirm canonical tenant IDs follow the accepted identifier format.
 - [ ] Complete a security review of every socket declaration and every tenant-topic selection path.
+- [ ] Keep `PESAGUARD_EVENT_INGEST_ENABLED=false` until Phase 4 contract, producer identity, tenant derivation, and delivery semantics are reviewed and tested.
 
 ## Trust model and limitations
 
