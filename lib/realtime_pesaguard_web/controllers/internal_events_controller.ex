@@ -50,7 +50,7 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
     end
   end
 
-    defp deliver_event(conn, event) do
+  defp deliver_event(conn, event) do
     case Broadcaster.broadcast(event["tenant_id"], event) do
       :ok ->
         case IdempotencyGuard.complete(event["event_id"], event["tenant_id"]) do
