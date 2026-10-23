@@ -16,6 +16,14 @@ defmodule RealtimePesaguard.Realtime.BroadcasterTest do
              Broadcaster.broadcast("tenant-a", %{"tenant_id" => "tenant-b"})
   end
 
+  test "rejects raw events that bypass the browser contract" do
+    assert {:error, :invalid_event} =
+             Broadcaster.broadcast("tenant-a", %{
+               "tenant_id" => "tenant-a",
+               "event_type" => "unknown.event"
+             })
+  end
+
   test "rejects invalid tenant identifiers" do
     assert {:error, :invalid_tenant_scope} =
              Broadcaster.broadcast("../tenant-b", %{"tenant_id" => "../tenant-b"})
