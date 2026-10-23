@@ -1,7 +1,81 @@
 defmodule RealtimePesaguardWeb.TenantChannel do
-  use Phoenix.Channel
+  @moduledoc """
+  Authorizes tenant-scoped transaction subscriptions using identity validated by
+  the canonical PesaGuard API. This channel transports events only; it does not
+  perform financial operations.
+  """
 
-  # Default-deny until a canonical PesaGuard token verifier is wired into UserSocket.connect/3.
+  use Phoenix.Channel
+  require Logger
+
+  @required_permission "read:transactions"
+  @tenant_id_pattern ~r/\A[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}\z/
+
   @impl true
-  def join("tenant:" <> _tenant_id, _params, _socket), do: {:error, %{reason: "unauthorized"}}
+  def join(topic, _params, socket) do
+    case authorize(topic, socket.assigns[:verified_claims]) do
+      :ok ->
+        {:ok, socket}
+
+      {:error, reason} ->
+        # Deliberately do not log tenant/user identifiers, client params or claims.
+        Logger.warning("Tenant channel join denied: #{reason}")
+        {:error, %{reason: "unauthorized"}}
+    end
+  end
+
+  defp authorize(topic, claims) when is_binary(topic) and is_map(claims) do
+    with {:ok, requested_tenant_id} <- parse_topic(topic),
+         {:ok, authenticated_tenant_id} <- tenant_id_from_claims(claims),
+         :ok <- match_tenant(requested_tenant_id, authenticated_tenant_id),
+         :ok <- require_transaction_permission(claims) do
+      :ok
+    end
+  end
+
+  defp authorize(_topic, _claims), do: {:error, "missing_verified_identity"}
+
+  defp parse_topic(topic) do
+    case String.split(topic, ":", trim: false) do
+      ["tenant", tenant_id, "transactions"] ->
+        if valid_tenant_id?(tenant_id) do
+          {:ok, tenant_id}
+        else
+          {:error, "invalid_tenant_id"}
+        end
+
+      _ ->
+        {:error, "unsupported_topic"}
+    end
+  end
+
+  defp tenant_id_from_claims(%{"tenant_id" => tenant_id}) when is_binary(tenant_id) do
+    if valid_tenant_id?(tenant_id) do
+      {:ok, tenant_id}
+    else
+      {:error, "invalid_verified_tenant_id"}
+    end
+  end
+
+  defp tenant_id_from_claims(_claims), do: {:error, "missing_verified_tenant_id"}
+
+  defp match_tenant(requested, authenticated) when requested == authenticated, do: :ok
+  defp match_tenant(_requested, _authenticated), do: {:error, "tenant_mismatch"}
+
+  defp require_transaction_permission(%{"permissions" => permissions})
+       when is_list(permissions) do
+    if Enum.all?(permissions, &is_binary/1) and @required_permission in permissions do
+      :ok
+    else
+      {:error, "missing_or_malformed_permission"}
+    end
+  end
+
+  defp require_transaction_permission(_claims), do: {:error, "missing_or_malformed_permission"}
+
+  defp valid_tenant_id?(tenant_id) when is_binary(tenant_id) do
+    Regex.match?(@tenant_id_pattern, tenant_id)
+  end
+
+  defp valid_tenant_id?(_tenant_id), do: false
 end
