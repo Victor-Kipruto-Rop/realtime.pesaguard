@@ -22,6 +22,7 @@
 ## Remaining acceptance gates
 
 - [ ] Run `mix format --check-formatted`, `mix compile --warnings-as-errors`, and `mix test` in a real Elixir environment.
+- [ ] Generate and commit `mix.lock` using the project's pinned Elixir/OTP toolchain, then verify a clean dependency install/build from that lockfile.
 - [ ] Verify the actual GitHub Actions run and record its URL/status.
 - [ ] Confirm production uses HTTPS and reverse-proxy logs redact socket query parameters; consider one-time socket tickets.
 - [ ] Define bounded revalidation/forced disconnect for already-connected sockets after session revocation.
@@ -34,4 +35,4 @@ Phase 2 code integration is implemented but **not verified complete** because te
 
 ## Verification record
 
-GitHub file commits succeeded. No Elixir commands, Docker build, deployment, or CI run were executed by this change; no successful test/build claim is made.
+GitHub file commits succeeded. The repository currently has no `mix.lock`, so dependency resolution is not reproducibly pinned. This environment has no Elixir/Mix/Docker runtime and cannot resolve GitHub over the shell network; no Elixir commands, Docker build, deployment, or CI run could be executed here. No successful test/build claim is made.
