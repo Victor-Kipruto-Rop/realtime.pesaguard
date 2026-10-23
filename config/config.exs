@@ -1,11 +1,15 @@
 import Config
 
+allowed_origins =
+  System.get_env("PESAGUARD_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+  |> String.split(",", trim: true)
+  |> Enum.map(&String.trim/1)
+  |> Enum.reject(&(&1 == ""))
+
 config :realtime_pesaguard,
   ecto_repos: [],
   event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
-  allowed_origins:
-    System.get_env("PESAGUARD_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
-    |> String.split(",", trim: true)
+  allowed_origins: allowed_origins
 
 config :realtime_pesaguard, RealtimePesaguardWeb.Endpoint,
   url: [host: "localhost"],
