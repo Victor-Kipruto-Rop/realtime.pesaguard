@@ -8,7 +8,6 @@ defmodule RealtimePesaguard.Accounts.TokenVerifier do
   client-decoded JWT claims.
   """
 
-  @callback verify(binary()) :: {:ok, map()} | {:error, atom()}
   @max_token_bytes 16_384
 
   @spec verify(binary()) :: {:ok, map()} | {:error, atom()}
