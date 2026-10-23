@@ -22,7 +22,7 @@ The current `GET /auth/verify` contract does not provide a complete organization
 
 Production runtime requires explicit exact HTTPS origins in `PESAGUARD_ALLOWED_ORIGINS`, configures Phoenix `check_origin` with that allow-list, and rejects wildcard or origin entries containing paths, queries or fragments. The Render blueprint sets the dashboard origin to `https://app.pesaguard.co.ke`; confirm the blueprint has been applied to the live service.
 
-Socket handshakes are limited to 30 per peer IP per 60-second window, and channel joins to 60 per peer IP per 60-second window. The in-process ETS limiter is node-local and is not a distributed quota system; production multi-instance deployments must also enforce edge-level limits. Each socket is limited to five channels per transport.
+Socket handshakes are limited to 30 per peer IP per 60-second window, and channel joins to 60 per authenticated subject per 60-second window. The in-process ETS limiter is node-local and is not a distributed quota system; production multi-instance deployments must also enforce edge-level limits. The gateway uses the socket peer address rather than trusting unverified forwarded-IP headers. Each socket is limited to five channels per transport.
 
 ## Connected-session revalidation
 
