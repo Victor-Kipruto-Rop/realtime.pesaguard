@@ -8,12 +8,28 @@ defmodule RealtimePesaguardWeb.TenantChannel do
   use Phoenix.Channel
   require Logger
 
+  alias RealtimePesaguard.Security.RateLimiter
+
   @required_permission "read:transactions"
   @tenant_id_pattern ~r/\A[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}\z/
+  @join_limit 60
+  @window_ms 60_000
 
   @impl true
   def join(topic, _params, socket) do
-    case authorize(topic, socket.assigns[:verified_claims]) do
+    ip = socket.assigns[:client_ip]
+
+    result =
+      with true <- is_binary(ip),
+           true <- RateLimiter.allow?(:channel_join, ip, @join_limit, @window_ms),
+           :ok <- authorize(topic, socket.assigns[:verified_claims]) do
+        :ok
+      else
+        false -> {:error, "join_rate_limit_or_client_ip_unavailable"}
+        {:error, reason} -> {:error, reason}
+      end
+
+    case result do
       :ok ->
         {:ok, socket}
 
