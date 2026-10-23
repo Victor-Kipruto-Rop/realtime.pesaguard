@@ -5,6 +5,8 @@ defmodule RealtimePesaguard.Application do
   def start(_type, _args) do
     children = [
       {Finch, name: RealtimePesaguard.Finch},
+      RealtimePesaguard.Security.RateLimiter,
+      RealtimePesaguard.Accounts.SocketSessionMonitor,
       {Phoenix.PubSub, name: RealtimePesaguard.PubSub},
       RealtimePesaguardWeb.Endpoint
     ]
