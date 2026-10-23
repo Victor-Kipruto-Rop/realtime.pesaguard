@@ -1,6 +1,6 @@
 # Phase 4 — Event contract checklist
 
-**Status: IMPLEMENTATION COMMITTED; RELEASE/PRODUCER COMPATIBILITY VERIFICATION PENDING.**
+**Status: IMPLEMENTED ON FEATURE BRANCH; CONTRACT/PRODUCER COMPATIBILITY AND CI VERIFICATION PENDING.**
 
 ## Implemented
 - [x] Inspected the canonical Python event envelope and producer event types in `Victor-Kipruto-Rop/api.pesaguard`.
@@ -17,6 +17,6 @@
 - [ ] Run formatter, compile and tests in a working pinned Elixir/OTP environment.
 - [ ] Run the checked-in synthetic fixture through the actual Python producer's serializer and compare outputs in an integration test.
 - [ ] Agree producer identity and tenant derivation; schema validation alone does not authenticate tenant scope.
-- [ ] Add signed/service-authenticated internal publishing and replay protection as part of Phase 8 before enabling ingress.
+- [ ] Add signed/service-authenticated internal publishing and shared durable replay protection as part of Phase 8 before enabling ingress.
 - [ ] Keep `PESAGUARD_EVENT_INGEST_ENABLED=false` until producer contract, tenant trust, and delivery behavior pass integration tests.
 - [ ] Do not claim the Phase 4 exit gate or production event routing is complete until the evidence above is recorded.
