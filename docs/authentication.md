@@ -1,29 +1,46 @@
 # Authentication integration contract
 
-## Implemented adapter boundary
+## Canonical issuer evidence
 
-The gateway now has a fail-closed HS256 JWT verifier and uses it during Phoenix socket connection. A connection is accepted only when the JWT signature and configured issuer/audience are valid, the token is not expired or not-yet-valid, and non-empty `sub` and `tenant_id` claims are present. The socket stores only verified claims. Missing verifier configuration rejects connections.
+The canonical API repository `Victor-Kipruto-Rop/api.pesaguard`, file `pesaguard_backend_pipeline/auth_rbac.py`, defines the current access-token contract. The gateway must follow this issuer rather than require the issuer to change to match a gateway-specific assumption.
 
-This is a deliberately narrow adapter, **not proof that the current PesaGuard identity provider issues this token format**. Before configuring it in staging or production, inspect the canonical API/auth implementation and confirm all items below. If PesaGuard uses RS256/ES256, JWKS, opaque tokens, different claims, or server-side membership checks, replace/adapt the verifier to that actual contract; do not change the issuer's behavior to match this gateway.
+Verified from that source:
 
-## Supported configuration
+- Algorithm: HS256.
+- Issuer default: `pesaguard`, configurable with `JWT_ISSUER`.
+- Audience default: `pesaguard-api`, configurable with `JWT_AUDIENCE`.
+- Signing key: `JWT_SECRET_KEY`, or key map `JWT_KEYS_JSON`; active key selected by `JWT_ACTIVE_KID`.
+- Signed JWT header includes `kid`; verification chooses a configured key and rejects unknown key IDs.
+- Access-token lifetime is configured from 1 to 15 minutes (default 15).
+- Required claims include `exp`, `iat`, `nbf`, `jti`, `sub`, `tenant_id`, `type`, `iss`, `aud`, `auth_version`, and `scope`.
+- Issued access tokens use `type: "access"`; the backend also issues machine-principal tokens with `principal_type`, `principal_id`, and permissions/scopes.
+- Backend auth includes persisted session activity/expiry checks, revoked-token state, and current account/authorization-version checks. These are not represented by signature verification alone.
 
-- `PESAGUARD_JWT_HS256_SECRET`: shared HS256 signing secret, minimum 32 bytes.
-- `PESAGUARD_JWT_ISSUER`: exact expected `iss` claim.
-- `PESAGUARD_JWT_AUDIENCE`: expected `aud` claim.
-- Tokens must contain `sub`, `tenant_id`, `iss`, `aud`, and `exp`; `nbf` is validated when present.
-- The verifier accepts only HS256. It does not negotiate algorithms from token headers and does not fetch JWKS.
+The backend source also shows a 30-second JWT clock leeway. The gateway must not silently widen expiry windows beyond the issuer's documented policy.
 
-Use the same secret as the canonical issuer only if the issuer contract explicitly uses HS256 and provides a supported secret-sharing model. Never copy a private signing key into this setting. Prefer asymmetric verification/JWKS when that is what the canonical identity system supports.
+## Gateway implementation currently present
 
-## Browser socket
+The gateway has a fail-closed Joken HS256 verifier invoked by the Phoenix socket connection. It currently validates the configured issuer/audience, expiration, optional not-before, and non-empty `sub` and `tenant_id`. It returns a limited claim set and rejects connections if required verifier configuration is missing.
 
-The Phoenix socket currently expects a `token` connection parameter over TLS/WSS. Browser WebSocket APIs do not allow arbitrary authorization headers. Therefore use short-lived access tokens, redact query strings from proxy/access logs, avoid token logging/analytics, and rotate credentials. If the frontend's auth flow cannot safely support this, implement a short-lived, one-time WebSocket ticket exchange with the canonical backend before rollout.
+**This verifier is not yet contract-compatible with the full canonical issuer contract.** In particular, it does not yet implement the issuer's `kid` key selection/rotation model or require all canonical claims, and it does not check persisted session, token revocation, account status, or `auth_version` against authoritative backend state. The existing local test signer only proves behavior against itself, not interoperability with the backend.
 
-## Still required before production
+## Required completion work
 
-- Confirm issuer, audience, signing algorithm, key distribution/rotation, token lifetime, revocation/logout policy and exact claim schema against the canonical backend.
-- Confirm whether tenant membership is represented by a trusted claim or must be fetched from an authoritative membership API. A `tenant_id` claim alone is not sufficient if the issuer does not guarantee current membership.
-- Implement token revocation/session invalidation if required by the identity contract.
-- Keep tenant channel joins denied until Phase 3 authorization is complete.
-- Run the auth test suite in a real Elixir environment and add contract tests using issuer-generated test tokens; the included tests use a local test signer and do not prove interoperability with production tokens.
+1. Implement configured key-map verification compatible with `JWT_KEYS_JSON` and `JWT_ACTIVE_KID`. Pin the algorithm to HS256; never trust an unverified header to select an algorithm, and allow a `kid` only to select among explicitly configured keys.
+2. Require and validate all applicable canonical access-token claims, including `type == "access"`, `jti`, `iat`, `nbf`, `auth_version`, and `scope`, with bounded claim sizes and the issuer's clock policy.
+3. Establish a documented server-to-server contract with the canonical backend for checking current session, revocation, account state and authorization version. Do not query the backend's private database directly from this gateway. If no supported validation/introspection endpoint exists, record this as a release blocker and keep user sockets unavailable for production.
+4. Separate human-user access tokens from service/API-client tokens and internal event-publisher credentials. Do not treat the internal event-ingest bearer token as a dashboard identity token.
+5. Add contract tests using tokens issued by the canonical backend (including key rotation and rejected unknown `kid`) and negative tests for wrong issuer/audience, missing claims, unsupported algorithms, expiry, revoked/inactive session and unavailable validation service.
+6. Confirm browser WebSocket token transport and reverse-proxy log redaction. Use short-lived tokens; if tokens must not appear in connection URLs/logs, add a one-time short-lived ticket exchange through the canonical backend.
+7. Run the Elixir formatter, compile, tests, and actual GitHub Actions checks; record the evidence in the checklist.
+
+## Current environment configuration
+
+The existing gateway configuration uses `PESAGUARD_JWT_HS256_SECRET`, `PESAGUARD_JWT_ISSUER`, and `PESAGUARD_JWT_AUDIENCE`. These settings are **not yet a complete representation** of the backend's key-rotation and stateful-validation contract. Do not populate them with production values or route production traffic until the adapter and validation boundary above are implemented and verified.
+
+## Fail-closed behavior
+
+- Missing or malformed verifier configuration rejects socket connections.
+- Tenant channel joins remain denied until Phase 3 tenant membership authorization is implemented.
+- If the canonical session/revocation validation service is unavailable, the gateway must reject new connections rather than accept stale tokens.
+- No gateway feature may originate, confirm, refund, settle, or move funds. The Python backend remains authoritative for financial state.
