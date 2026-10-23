@@ -1,8 +1,9 @@
 defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   @moduledoc """
   Periodically revalidates connected socket credentials against the canonical API.
-  Invalid credentials or an unavailable verifier cause the associated socket ID
-  to be disconnected. Raw tokens are held in memory only and are never logged.
+  Invalid credentials, changed identity/permissions, or an unavailable verifier
+  cause the associated socket ID to be disconnected. Raw tokens are held in
+  memory only and are never logged.
   """
 
   use GenServer
@@ -17,10 +18,10 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @spec register(binary(), binary(), pid()) :: :ok | {:error, term()}
-  def register(token, subject, pid)
-      when is_binary(token) and is_binary(subject) and is_pid(pid) do
-    GenServer.call(__MODULE__, {:register, token, subject, pid})
+  @spec register(binary(), map(), pid()) :: :ok | {:error, term()}
+  def register(token, claims, pid)
+      when is_binary(token) and is_map(claims) and is_pid(pid) do
+    GenServer.call(__MODULE__, {:register, token, claims, pid})
   catch
     :exit, reason -> {:error, reason}
   end
@@ -32,10 +33,10 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   end
 
   @impl true
-  def handle_call({:register, token, subject, pid}, _from, state) do
+  def handle_call({:register, token, claims, pid}, _from, state) do
     state = remove_session(state, pid)
     monitor_ref = Process.monitor(pid)
-    session = %{token: token, subject: subject, monitor_ref: monitor_ref}
+    session = %{token: token, claims: claims, subject: claims["sub"], monitor_ref: monitor_ref}
     {:reply, :ok, put_in(state, [:sessions, pid], session)}
   end
 
@@ -50,14 +51,14 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   def handle_info(:revalidate, state) do
     sessions =
       state.sessions
-      |> Enum.map(fn {pid, session} -> {pid, session.token, session.subject} end)
+      |> Enum.map(fn {pid, session} -> {pid, session.token, session.claims} end)
 
     results =
       sessions
       |> Task.async_stream(
-        fn {pid, token, subject} ->
+        fn {_pid, token, expected_claims} ->
           case TokenVerifier.verify(token) do
-            {:ok, %{"sub" => ^subject}} -> :valid
+            {:ok, ^expected_claims} -> :valid
             _ -> :invalid
           end
         end,
@@ -68,8 +69,8 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
       )
       |> Enum.zip(sessions)
       |> Enum.map(fn
-        {{:ok, :valid}, {pid, _token, _subject}} -> {pid, :valid}
-        {_failed_or_invalid, {pid, _token, _subject}} -> {pid, :invalid}
+        {{:ok, :valid}, {pid, _token, _claims}} -> {pid, :valid}
+        {_failed_or_invalid, {pid, _token, _claims}} -> {pid, :invalid}
       end)
 
     invalid_pids =
@@ -80,7 +81,7 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
 
     Enum.each(invalid_pids, fn pid ->
       case get_in(state, [:sessions, pid]) do
-        %{subject: subject} ->
+        %{subject: subject} when is_binary(subject) ->
           # Phoenix's socket ID is subject-scoped; disconnecting it revokes all
           # active sockets for that identity, which is intentionally fail-closed.
           RealtimePesaguardWeb.Endpoint.broadcast("user_socket:#{subject}", "disconnect", %{})
