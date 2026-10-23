@@ -29,6 +29,18 @@ defmodule RealtimePesaguard.Events.EnvelopeTest do
     refute Map.has_key?(result, "producer")
   end
 
+  test "accepts the checked-in synthetic fixture matching the Python producer contract" do
+    fixture_path = Path.join(__DIR__, "../../fixtures/fraud_analysis_started_v1.json")
+    event = fixture_path |> File.read!() |> Jason.decode!()
+
+    assert {:ok, result} = Envelope.validate(event)
+    assert result["event_type"] == "fraud.analysis.started"
+    assert result["payload"] == %{
+             "transaction_id" => "transaction-test-001",
+             "model_version" => "risk-model-test-v1"
+           }
+  end
+
   test "rejects events missing required fields" do
     assert {:error, {:missing_fields, _}} = Envelope.validate(%{"event_id" => "evt-1"})
   end
