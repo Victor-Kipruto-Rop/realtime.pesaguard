@@ -27,7 +27,7 @@ This is not a release approval. The current branch has not yet passed a verified
 - [ ] Run `mix format --check-formatted`.
 - [ ] Run `mix compile --warnings-as-errors`.
 - [ ] Run `mix test` and verify the configured coverage threshold.
-- [ ] Confirm a successful GitHub Actions run for the latest branch commit.
+- [ ] Obtain a successful GitHub Actions run for the latest branch commit. A fresh run was observed as failed, but the connector could not retrieve its job logs, so the cause is unknown and no passing result is claimed.
 - [ ] Verify Render has actually applied the `render.yaml` origin value and that the live Phoenix endpoint rejects disallowed browser origins.
 - [ ] Verify connection limits at the public proxy/load balancer. The in-process limiter is node-local, so multi-instance deployments need edge-level controls too.
 - [ ] Review the revalidation interval and capacity against expected concurrent socket volume.
