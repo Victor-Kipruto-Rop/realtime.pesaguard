@@ -32,7 +32,7 @@ defmodule RealtimePesaguard.Accounts.BackendAuthClient do
     case Application.get_env(:realtime_pesaguard, :auth_validation_url) do
       url when is_binary(url) and byte_size(url) > 0 ->
         uri = URI.parse(url)
-        if uri.scheme in ["https", "http"] and is_binary(uri.host) do
+        if uri.scheme == "https" and is_binary(uri.host) do
           {:ok, url}
         else
           {:error, :identity_verifier_not_configured}
