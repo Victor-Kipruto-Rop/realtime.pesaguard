@@ -8,6 +8,7 @@ defmodule RealtimePesaguard.MixProject do
       elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      test_coverage: [summary: [threshold: 80]],
       aliases: aliases(),
       deps: deps()
     ]
@@ -40,7 +41,7 @@ defmodule RealtimePesaguard.MixProject do
   defp aliases do
     [
       setup: ["deps.get"],
-      "assets.deploy": []
+      check: ["format --check-formatted", "compile --warnings-as-errors", "test"]
     ]
   end
 end
