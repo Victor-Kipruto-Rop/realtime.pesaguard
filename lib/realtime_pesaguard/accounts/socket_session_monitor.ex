@@ -13,6 +13,7 @@ defmodule RealtimePesaguard.Accounts.SocketSessionMonitor do
   @revalidate_interval_ms 60_000
   @task_timeout_ms 4_000
   @max_concurrency 10
+  @max_sessions 10_000
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
