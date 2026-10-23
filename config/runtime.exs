@@ -25,6 +25,9 @@ if config_env() == :prod do
 
   config :realtime_pesaguard,
     event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
+    jwt_hs256_secret: System.get_env("PESAGUARD_JWT_HS256_SECRET"),
+    jwt_issuer: System.get_env("PESAGUARD_JWT_ISSUER"),
+    jwt_audience: System.get_env("PESAGUARD_JWT_AUDIENCE"),
     allowed_origins: allowed_origins
 
   config :realtime_pesaguard, RealtimePesaguardWeb.Endpoint,
