@@ -7,7 +7,11 @@ defmodule RealtimePesaguardWeb.Endpoint do
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-  plug Plug.Parsers, parsers: [:json], pass: ["application/json"], json_decoder: Jason
+  plug Plug.Parsers,
+    parsers: [:json],
+    pass: ["application/json"],
+    json_decoder: Jason,
+    length: 65_536
   plug Plug.MethodOverride
   plug Plug.Head
   plug RealtimePesaguardWeb.Router
