@@ -1,0 +1,10 @@
+.git
+.github
+_build
+deps
+cover
+.elixir_ls
+.env
+.env.*
+!.env.example
+mix.lock.tmp
