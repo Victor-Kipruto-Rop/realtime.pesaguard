@@ -23,7 +23,7 @@ defmodule RealtimePesaguardWeb.UserSocket do
          true <- RateLimiter.allow?(:socket_connect, ip, @connect_limit, @window_ms),
          {:ok, claims} <- TokenVerifier.verify(token),
          subject when is_binary(subject) <- claims["sub"],
-         :ok <- SocketSessionMonitor.register(token, subject, self()) do
+         :ok <- SocketSessionMonitor.register(token, claims, self()) do
       {:ok,
        socket
        |> assign(:verified_claims, claims)
