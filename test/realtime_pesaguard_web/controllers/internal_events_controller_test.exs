@@ -32,7 +32,7 @@ defmodule RealtimePesaguardWeb.InternalEventsControllerTest do
     Application.put_env(:realtime_pesaguard, :event_ingest_token, "configured-test-token")
 
     event = %{
-      "event_id" => "evt-test",
+      "event_id" => "evt-test-failed-" <> Integer.to_string(System.unique_integer([:positive])),
       "event_type" => "transaction.failed",
       "event_version" => 1,
       "schema_version" => "1.0",
@@ -75,7 +75,7 @@ defmodule RealtimePesaguardWeb.InternalEventsControllerTest do
     Application.put_env(:realtime_pesaguard, :event_ingest_token, "configured-test-token")
 
     event = %{
-      "event_id" => "evt-test",
+      "event_id" => "evt-test-unknown-" <> Integer.to_string(System.unique_integer([:positive])),
       "event_type" => "unknown.event",
       "event_version" => 1,
       "schema_version" => "1.0",
