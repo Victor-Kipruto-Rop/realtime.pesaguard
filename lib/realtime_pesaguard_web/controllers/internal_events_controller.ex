@@ -66,15 +66,26 @@ defmodule RealtimePesaguardWeb.InternalEventsController do
         end
 
       {:error, reason} when reason in [:invalid_tenant_scope, :invalid_event] ->
-        :ok = IdempotencyGuard.release(event["event_id"], event["tenant_id"])
+        release_claim(event)
         conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid_event"})
 
       {:error, _reason} ->
-        :ok = IdempotencyGuard.release(event["event_id"], event["tenant_id"])
-        conn
-        |> put_status(:service_unavailable)
-        |> json(%{error: "event_delivery_unavailable"})
+        case release_claim(event) do
+          :ok ->
+            conn
+            |> put_status(:service_unavailable)
+            |> json(%{error: "event_delivery_unavailable"})
+
+          {:error, _release_reason} ->
+            conn
+            |> put_status(:service_unavailable)
+            |> json(%{error: "event_delivery_state_unavailable"})
+        end
     end
+  end
+
+  defp release_claim(event) do
+    IdempotencyGuard.release(event["event_id"], event["tenant_id"])
   end
 
   defp bearer_token("Bearer " <> token), do: token
