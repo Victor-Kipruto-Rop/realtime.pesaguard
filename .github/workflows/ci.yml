@@ -16,7 +16,7 @@ concurrency:
 jobs:
   test:
     name: Format, compile and test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
@@ -45,7 +45,7 @@ jobs:
 
   container:
     name: Build container
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Build image

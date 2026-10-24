@@ -5,11 +5,14 @@ defmodule RealtimePesaguard.Application do
   def start(_type, _args) do
     children = [
       {Finch, name: RealtimePesaguard.Finch},
+      RealtimePesaguard.Security.RateLimiter,
+      RealtimePesaguard.Events.IdempotencyGuard,
+      RealtimePesaguard.Accounts.SocketSessionMonitor,
       {Phoenix.PubSub, name: RealtimePesaguard.PubSub},
       RealtimePesaguardWeb.Endpoint
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: RealtimePesaguard.Supervisor)
+    Supervisor.start_link(children, strategy: :rest_for_one, name: RealtimePesaguard.Supervisor)
   end
 
   @impl true

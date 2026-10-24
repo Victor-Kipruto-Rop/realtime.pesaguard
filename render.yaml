@@ -14,9 +14,11 @@ services:
         sync: false
       - key: SECRET_KEY_BASE
         generateValue: true
+      - key: PESAGUARD_EVENT_INGEST_ENABLED
+        value: "false"
       - key: PESAGUARD_EVENT_INGEST_TOKEN
         sync: false
       - key: PESAGUARD_AUTH_VALIDATION_URL
         value: https://api.pesaguard.co.ke/auth/verify
       - key: PESAGUARD_ALLOWED_ORIGINS
-        sync: false
+        value: https://app.pesaguard.co.ke

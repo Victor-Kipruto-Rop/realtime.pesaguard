@@ -25,9 +25,9 @@
 - [ ] Generate and commit `mix.lock` using the project's pinned Elixir/OTP toolchain, then verify a clean dependency install/build from that lockfile.
 - [ ] Verify the actual GitHub Actions run and record its URL/status.
 - [ ] Confirm production uses HTTPS and reverse-proxy logs redact socket query parameters; consider one-time socket tickets.
-- [ ] Define bounded revalidation/forced disconnect for already-connected sockets after session revocation.
+- [x] Implemented a 60-second canonical revalidation monitor that disconnects sockets when credentials become invalid, identity/permissions change, or the verifier is unavailable; load and integration verification remain pending.
 - [ ] Confirm canonical `/auth/verify` is reachable from the deployed gateway service and its response shape matches the implemented client.
-- [ ] Tenant channel joins remain denied until Phase 3 authorization is implemented.
+- [x] Phase 3 branch implements tenant-scoped transaction authorization; see [Phase 3 checklist](phase-3-checklist.md).
 
 ## Release decision
 

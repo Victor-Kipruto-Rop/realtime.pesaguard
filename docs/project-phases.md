@@ -230,6 +230,21 @@ The gateway must not initiate, confirm, refund, move, or settle payments. It mus
 - No unresolved critical security or correctness issue remains.
 - Service ownership and ongoing maintenance responsibilities are documented.
 
+## Current implementation checklists
+
+- [Phase 3 — Tenant authorization](phase-3-checklist.md)
+- [Phase 4 — Event contracts](phase-4-checklist.md)
+- [Phase 5 — Event transport](phase-5-checklist.md)
+- [Phase 6 — Routing and delivery](phase-6-checklist.md)
+- [Phase 7 — Dashboard client](phase-7-checklist.md)
+- [Phase 8 — Internal API hardening](phase-8-checklist.md)
+- [Phase 9 — Observability](phase-9-checklist.md)
+- [Phase 10 — Security and resilience](phase-10-checklist.md)
+- [Phase 11 — Staging and deployment](phase-11-checklist.md)
+- [Phase 12 — Production rollout](phase-12-checklist.md)
+
+The checklists intentionally distinguish committed implementation from tested behavior. A checklist marked blocked or unverified is not a completed phase.
+
 ## Cross-phase definition of done
 
 A phase is complete only when:

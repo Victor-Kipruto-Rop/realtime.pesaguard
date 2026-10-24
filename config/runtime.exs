@@ -23,8 +23,22 @@ if config_env() == :prod do
     raise "PESAGUARD_ALLOWED_ORIGINS must contain at least one trusted origin in production"
   end
 
+  Enum.each(allowed_origins, fn origin ->
+    uri = URI.parse(origin)
+
+    valid_origin? =
+      uri.scheme == "https" and is_binary(uri.host) and uri.host != "" and
+        uri.path in [nil, ""] and is_nil(uri.query) and is_nil(uri.fragment) and
+        is_nil(uri.userinfo) and not String.contains?(origin, "*")
+
+    unless valid_origin? do
+      raise "PESAGUARD_ALLOWED_ORIGINS must contain exact HTTPS origins only; invalid entry: #{origin}"
+    end
+  end)
+
   config :realtime_pesaguard,
     event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
+    event_ingest_enabled: System.get_env("PESAGUARD_EVENT_INGEST_ENABLED") == "true",
     auth_validation_url:
       System.get_env("PESAGUARD_AUTH_VALIDATION_URL") ||
         raise("PESAGUARD_AUTH_VALIDATION_URL is required in production"),

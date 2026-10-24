@@ -9,6 +9,7 @@ allowed_origins =
 config :realtime_pesaguard,
   ecto_repos: [],
   event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
+  event_ingest_enabled: System.get_env("PESAGUARD_EVENT_INGEST_ENABLED") == "true",
   auth_validation_url: System.get_env("PESAGUARD_AUTH_VALIDATION_URL"),
   allowed_origins: allowed_origins
 
