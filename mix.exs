@@ -32,7 +32,7 @@ defmodule RealtimePesaguard.MixProject do
       {:telemetry_poller, "~> 1.1"},
       {:joken, "~> 2.6"},
       {:finch, "~> 0.18"},
-      {:brod, "~> 4.5"}
+      {:brod, "~> 4.6.0"}
     ]
   end
 
