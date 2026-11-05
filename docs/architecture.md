@@ -7,7 +7,7 @@ The gateway runs beside the existing PesaGuard Python API.
 - Phoenix consumes only the approved browser-delivery topics using a dedicated Kafka consumer group.
 - The consumer validates event version, schema, event type, topic-to-type mapping, and the producer's tenant/event-type headers before calling the tenant-scoped broadcaster.
 - Phoenix PubSub fans out only minimized allow-listed events to authenticated tenant channels.
-- Kafka offsets are acknowledged only after local PubSub delivery succeeds. Transient delivery failures restart the subscriber without committing the failed message; the broker can redeliver it.
+- A node-local idempotency guard suppresses repeated event IDs for ten minutes. Kafka offsets are acknowledged only after local PubSub delivery succeeds. Transient delivery failures restart the subscriber without committing the failed message; the broker can redeliver it.
 - Unknown event types on subscribed topics are acknowledged and ignored. They are not exposed to browsers.
 
 ## Approved topic bindings
