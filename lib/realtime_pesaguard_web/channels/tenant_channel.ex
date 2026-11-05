@@ -1,12 +1,15 @@
 defmodule RealtimePesaguardWeb.TenantChannel do
-  @moduledoc """
-  Tenant channel placeholder. Authentication is performed by UserSocket; tenant
-  membership authorization is completed in Phase 3. Joins remain denied here so
-  authentication alone cannot grant access to tenant event streams.
-  """
-
   use Phoenix.Channel
 
+  alias RealtimePesaguard.Tenants.AccessPolicy
+
   @impl true
-  def join("tenant:" <> _tenant_id, _payload, _socket), do: {:error, %{reason: "forbidden"}}
+  def join("tenant:" <> requested_tenant_id, _params, socket) do
+    claims = socket.assigns[:verified_claims] || %{}
+
+    case AccessPolicy.authorize_join(claims, requested_tenant_id) do
+      :ok -> {:ok, socket}
+      {:error, _reason} -> {:error, %{reason: "unauthorized"}}
+    end
+  end
 end
