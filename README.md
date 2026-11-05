@@ -9,7 +9,7 @@ Elixir/Phoenix service for tenant-scoped live updates. It complements the existi
 - Provide health/readiness endpoints and structured operational logging.
 
 ## Safety boundary
-This initial service is a secure foundation, not a production-ready deployment by itself. Authentication integration with the canonical PesaGuard identity/JWT issuer and the Kafka/Redpanda consumer must be completed and tested against the actual contracts before connecting production traffic. The default channel authorizer denies joins until a verified identity is assigned. No mock tenant, transaction, or risk data is generated.
+This initial service is a secure foundation, not a production-ready deployment by itself. Authentication integration with the canonical PesaGuard identity/JWT issuer and the Kafka/Redpanda consumer must be completed and tested against the actual contracts before connecting production traffic. The socket validates access tokens against the canonical PesaGuard API, and the channel authorizer permits a join only when the verified tenant claim exactly matches the requested tenant channel. No mock tenant, transaction, or risk data is generated.
 
 ## Requirements
 - Elixir 1.16+ / OTP 26+
@@ -26,7 +26,7 @@ mix test
 mix phx.server
 ```
 
-The HTTP server listens on `PORT` (default 4000). `GET /health/live` is liveness only. Readiness remains conservative until required production dependencies are configured.
+The HTTP server listens on `PORT` (default 4000). `GET /health/live` is liveness only. For the coordinated local PesaGuard Compose network, set `PESAGUARD_ENVIRONMENT=development` and `PESAGUARD_AUTH_VALIDATION_URL=http://dashboard_api:5001/auth/verify`; plaintext HTTP is accepted only for the explicitly allow-listed local API hosts in development/test. Hosted environments require HTTPS. `GET /health/ready` remains unavailable until the event-bus consumer is implemented and configured.
 
 ## Event envelope
 ```json
@@ -118,4 +118,4 @@ Use the strict, phase-by-phase execution pack in [`prompts/README.md`](prompts/R
 
 ## Authentication status
 
-Phase 2 introduces a fail-closed HS256 JWT verifier for socket handshakes. It must only be configured after the canonical PesaGuard issuer contract is verified; asymmetric/JWKS or opaque-token identity systems require the matching adapter. Tenant channel joins remain denied until Phase 3 membership authorization. See [authentication contract](docs/authentication.md), [security controls](docs/security.md), and the [Phase 2 checklist](docs/phase-2-checklist.md). This gateway is not ready for production while identity interoperability and event transport remain unverified.
+Socket handshakes delegate access-token verification to the canonical PesaGuard API so key rotation, session revocation and account state are not duplicated in the gateway. Tenant channel joins compare the verified tenant claim with the requested tenant channel and fail closed on mismatch. Local HTTP is accepted only for the explicitly allow-listed Docker DNS/loopback hosts when `PESAGUARD_ENVIRONMENT=development` or `test`; production and staging require HTTPS. The Kafka/Redpanda consumer and event delivery contract remain unimplemented, so the service is not production-ready. See [authentication contract](docs/authentication.md), [security controls](docs/security.md), and the [Phase 2 checklist](docs/phase-2-checklist.md). This gateway is not ready for production while identity interoperability and event transport remain unverified.
