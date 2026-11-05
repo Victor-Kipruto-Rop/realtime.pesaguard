@@ -53,6 +53,7 @@ Only trusted backend producers should have network access and credentials to pub
 - A message is acknowledged after successful validation and PubSub broadcast, or after being intentionally rejected as malformed/unapproved.
 - Transient PubSub delivery failures receive bounded in-process retries. If delivery still fails, the subscriber exits without acknowledging, allowing the consumer group to redeliver after restart.
 - Kafka consumer group offsets are committed by the broker subscriber.
+- A node-local idempotency guard suppresses duplicate event IDs for ten minutes. It is process-local, not durable or distributed; a node restart can lose this cache. Do not claim exactly-once or cross-node deduplication.
 - The consumer starts at the latest offset for a brand-new group unless a deployment explicitly changes the offset policy. Do not use a new group against production if historical replay is required.
 - The internal HTTP ingest route remains disabled by default and is not part of this broker path.
 
