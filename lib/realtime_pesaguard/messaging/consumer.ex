@@ -101,9 +101,7 @@ defmodule RealtimePesaguard.Messaging.Consumer do
 
   def terminate(_reason, _state), do: :ok
 
-  defp start_client(true, _endpoints), do: :ok
-
-  defp start_client(false, endpoints) do
+  defp start_client(_client_started?, endpoints) do
     case :brod.start_client(endpoints, @client_id, allow_topic_auto_creation: false) do
       :ok -> :ok
       {:ok, _pid} -> :ok
