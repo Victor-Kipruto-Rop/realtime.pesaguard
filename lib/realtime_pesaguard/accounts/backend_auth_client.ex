@@ -28,6 +28,9 @@ defmodule RealtimePesaguard.Accounts.BackendAuthClient do
 
   def validate(_), do: {:error, :invalid_token}
 
+  @doc false
+  def configured?, do: match?({:ok, _url}, configured_url())
+
   defp configured_url do
     case Application.get_env(:realtime_pesaguard, :auth_validation_url) do
       url when is_binary(url) and byte_size(url) > 0 ->
