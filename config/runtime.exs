@@ -23,16 +23,26 @@ if config_env() == :prod do
     raise "PESAGUARD_ALLOWED_ORIGINS must contain at least one trusted origin in production"
   end
 
+  environment = System.get_env("PESAGUARD_ENVIRONMENT", "production")
+
   Enum.each(allowed_origins, fn origin ->
     uri = URI.parse(origin)
 
-    valid_origin? =
-      uri.scheme == "https" and is_binary(uri.host) and uri.host != "" and
+    exact_origin? =
+      is_binary(uri.host) and uri.host != "" and
         uri.path in [nil, ""] and is_nil(uri.query) and is_nil(uri.fragment) and
         is_nil(uri.userinfo) and not String.contains?(origin, "*")
 
-    unless valid_origin? do
-      raise "PESAGUARD_ALLOWED_ORIGINS must contain exact HTTPS origins only; invalid entry: #{origin}"
+    secure_https_origin? = uri.scheme == "https" and exact_origin?
+
+    local_development_origin? =
+      environment in ["development", "test"] and
+        uri.scheme == "http" and
+        uri.host in ["localhost", "127.0.0.1", "::1"] and
+        exact_origin?
+
+    unless secure_https_origin? or local_development_origin? do
+      raise "PESAGUARD_ALLOWED_ORIGINS must contain exact HTTPS origins, or exact loopback HTTP origins in development/test only; invalid entry: #{origin}"
     end
   end)
 
