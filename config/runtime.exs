@@ -25,6 +25,45 @@ if config_env() == :prod do
 
   environment = System.get_env("PESAGUARD_ENVIRONMENT", "production")
 
+  event_consumer_enabled = System.get_env("PESAGUARD_EVENT_CONSUMER_ENABLED") == "true"
+
+  kafka_brokers =
+    System.get_env("KAFKA_BROKERS", "")
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+
+  kafka_event_topics =
+    System.get_env(
+      "PESAGUARD_REALTIME_EVENT_TOPICS",
+      "pesaguard.transactions.failed,pesaguard.transactions.rejected,pesaguard.fraud.analysis"
+    )
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+
+  kafka_consumer_group =
+    System.get_env("PESAGUARD_REALTIME_CONSUMER_GROUP", "pesaguard-realtime-gateway-v1")
+    |> String.trim()
+
+  required_event_topics = [
+    "pesaguard.transactions.failed",
+    "pesaguard.transactions.rejected",
+    "pesaguard.fraud.analysis"
+  ]
+
+  if event_consumer_enabled and kafka_brokers == [] do
+    raise "KAFKA_BROKERS is required when PESAGUARD_EVENT_CONSUMER_ENABLED=true"
+  end
+
+  if event_consumer_enabled and not Enum.all?(required_event_topics, &(&1 in kafka_event_topics)) do
+    raise "PESAGUARD_REALTIME_EVENT_TOPICS must include all approved browser event topics"
+  end
+
+  if event_consumer_enabled and kafka_consumer_group == "" do
+    raise "PESAGUARD_REALTIME_CONSUMER_GROUP must not be empty"
+  end
+
   Enum.each(allowed_origins, fn origin ->
     uri = URI.parse(origin)
 
@@ -49,6 +88,10 @@ if config_env() == :prod do
   config :realtime_pesaguard,
     event_ingest_token: System.get_env("PESAGUARD_EVENT_INGEST_TOKEN"),
     event_ingest_enabled: System.get_env("PESAGUARD_EVENT_INGEST_ENABLED") == "true",
+    event_consumer_enabled: event_consumer_enabled,
+    kafka_brokers: kafka_brokers,
+    kafka_consumer_group: kafka_consumer_group,
+    kafka_event_topics: kafka_event_topics,
     auth_validation_url:
       System.get_env("PESAGUARD_AUTH_VALIDATION_URL") ||
         raise("PESAGUARD_AUTH_VALIDATION_URL is required in production"),
