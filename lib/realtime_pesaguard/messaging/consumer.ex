@@ -10,6 +10,7 @@ defmodule RealtimePesaguard.Messaging.Consumer do
 
   @client_id :pesaguard_realtime_kafka
   @retry_ms 5_000
+  @health_check_ms 10_000
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -44,8 +45,10 @@ defmodule RealtimePesaguard.Messaging.Consumer do
   def handle_info(:connect, state) do
     with {:ok, endpoints} <- broker_endpoints(),
          :ok <- start_client(state.client_started?, endpoints),
+         :ok <- ensure_topics_available(),
          {:ok, subscriber} <- start_subscriber() do
       Logger.info("Realtime event consumer connected to configured Redpanda topics")
+      Process.send_after(self(), :health_check, @health_check_ms)
       {:noreply, %{state | client_started?: true, subscriber: subscriber, ready?: true}}
     else
       {:error, reason} ->
@@ -54,6 +57,15 @@ defmodule RealtimePesaguard.Messaging.Consumer do
         {:noreply, %{state | ready?: false}}
     end
   end
+
+  def handle_info(:health_check, %{subscriber: subscriber} = state) when is_pid(subscriber) do
+    ready? = ensure_topics_available() == :ok
+    if not ready?, do: Logger.warning("Realtime broker topic health check failed")
+    Process.send_after(self(), :health_check, @health_check_ms)
+    {:noreply, %{state | ready?: ready?}}
+  end
+
+  def handle_info(:health_check, state), do: {:noreply, state}
 
   def handle_info({:EXIT, subscriber, reason}, %{subscriber: subscriber} = state) do
     Logger.warning("Realtime consumer group stopped; reconnecting: #{inspect(reason)}")
@@ -103,6 +115,27 @@ defmodule RealtimePesaguard.Messaging.Consumer do
   end
 
   defp parse_endpoint(_), do: nil
+
+  defp ensure_topics_available do
+    topics =
+      Application.get_env(
+        :realtime_pesaguard,
+        :kafka_event_topics,
+        [
+          "pesaguard.transactions.failed",
+          "pesaguard.transactions.rejected",
+          "pesaguard.fraud.analysis"
+        ]
+      )
+
+    Enum.reduce_while(topics, :ok, fn topic, :ok ->
+      case :brod.get_partitions_count_safe(@client_id, String.to_charlist(topic)) do
+        {:ok, count} when count > 0 -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, {:topic_unavailable, topic, reason}}}
+        _ -> {:halt, {:error, {:topic_unavailable, topic}}}
+      end
+    end)
+  end
 
   defp start_subscriber do
     group_id =
