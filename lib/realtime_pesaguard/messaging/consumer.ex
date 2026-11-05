@@ -129,7 +129,7 @@ defmodule RealtimePesaguard.Messaging.Consumer do
       )
 
     Enum.reduce_while(topics, :ok, fn topic, :ok ->
-      case :brod.get_partitions_count_safe(@client_id, String.to_charlist(topic)) do
+      case :brod.get_partitions_count_safe(@client_id, topic) do
         {:ok, count} when count > 0 -> {:cont, :ok}
         {:error, reason} -> {:halt, {:error, {:topic_unavailable, topic, reason}}}
         _ -> {:halt, {:error, {:topic_unavailable, topic}}}
@@ -155,14 +155,14 @@ defmodule RealtimePesaguard.Messaging.Consumer do
           "pesaguard.fraud.analysis"
         ]
       )
-      |> Enum.map(&String.to_charlist/1)
+      
 
     :brod.start_link_group_subscriber(
       @client_id,
-      String.to_charlist(group_id),
+      group_id,
       topics,
-      [offset_commit_policy: :commit_to_kafka],
-      [begin_offset: :latest, prefetch_count: 1, max_bytes: 1_048_576],
+      [offset_commit_policy: :commit_to_kafka_v2, offset_commit_interval_seconds: 5],
+      [begin_offset: :latest, prefetch_count: 0, prefetch_bytes: 0, max_bytes: 1_048_576],
       RealtimePesaguard.Messaging.EventHandler,
       %{}
     )
