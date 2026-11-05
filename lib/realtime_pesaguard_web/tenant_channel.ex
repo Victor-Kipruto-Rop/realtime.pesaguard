@@ -23,7 +23,8 @@ defmodule RealtimePesaguardWeb.TenantChannel do
     result =
       with true <- is_binary(subject),
            true <- RateLimiter.allow?(:channel_join, subject, @join_limit, @window_ms),
-           :ok <- authorize(topic, claims) do
+           :ok <- authorize(topic, claims),
+           :ok <- Phoenix.PubSub.subscribe(RealtimePesaguard.PubSub, topic) do
         :ok
       else
         false -> {:error, "join_rate_limit_or_identity_unavailable"}
@@ -40,6 +41,21 @@ defmodule RealtimePesaguardWeb.TenantChannel do
         {:error, %{reason: "unauthorized"}}
     end
   end
+
+  @impl true
+  def handle_info({:pesaguard_event, event}, socket) when is_map(event) do
+    claims = socket.assigns[:verified_claims]
+
+    if event["tenant_id"] == claims["tenant_id"] do
+      push(socket, "pesaguard_event", event)
+    else
+      Logger.warning("Cross-tenant realtime event suppressed")
+    end
+
+    {:noreply, socket}
+  end
+
+  def handle_info(_message, socket), do: {:noreply, socket}
 
   defp authorize(topic, claims) when is_binary(topic) and is_map(claims) do
     with {:ok, requested_tenant_id} <- parse_topic(topic),
