@@ -13,7 +13,7 @@ Elixir/Phoenix service for tenant-scoped live updates. It complements the existi
 
 The canonical Python API remains authoritative. The gateway forwards only the three event types explicitly allow-listed in the event contract. It does not initiate, confirm, reverse, refund, settle, or move funds. No mock tenant, transaction, or risk data is generated.
 
-The Kafka consumer validates the producer's tenant and event-type headers against the event body. It acknowledges successful deliveries only after Phoenix PubSub accepts the event. Unsupported events are ignored, not exposed to browsers. Keep broker access private to trusted backend services.
+The Kafka consumer validates the producer's tenant and event-type headers against the event body. It uses a node-local ten-minute idempotency guard and acknowledges successful deliveries only after Phoenix PubSub accepts the event. Unsupported events are ignored, not exposed to browsers. Deduplication is not durable or distributed. Keep broker access private to trusted backend services.
 
 ## Requirements
 - Elixir 1.16+ / OTP 26+
