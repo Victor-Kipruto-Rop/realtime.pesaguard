@@ -34,6 +34,11 @@ defmodule RealtimePesaguard.Messaging.EventHandlerTest do
     assert delivered["tenant_id"] == "tenant-a"
     assert delivered["payload"] == %{"transaction_id" => "tx-1", "state" => "FAILED"}
     refute Map.has_key?(delivered, "metadata")
+
+    assert {:ok, :ack, %{}} =
+             EventHandler.handle_message(~c"pesaguard.transactions.failed", 0, message, %{})
+
+    refute_receive {:pesaguard_event, _}
   end
 
   test "does not broadcast when broker tenant metadata differs from the event body" do
