@@ -8,7 +8,7 @@ defmodule RealtimePesaguard.Messaging.EventHandler do
   @behaviour :brod_group_subscriber
   require Logger
 
-  alias RealtimePesaguard.Events.Envelope
+  alias RealtimePesaguard.Events.{Envelope, IdempotencyGuard}
   alias RealtimePesaguard.Realtime.Broadcaster
 
   @topic_events %{
@@ -39,8 +39,10 @@ defmodule RealtimePesaguard.Messaging.EventHandler do
          :ok <- broker_identity_matches(event, headers) do
       case Envelope.validate(event) do
         {:ok, client_event} ->
-          deliver_or_raise(client_event)
-          {:ok, :ack, state}
+          case deliver_or_raise(client_event) do
+            :ok -> {:ok, :ack, state}
+            :duplicate -> {:ok, :ack, state}
+          end
 
         {:error, reason} ->
           Logger.warning("Broker event rejected by client contract: #{inspect(reason)}")
@@ -72,19 +74,47 @@ defmodule RealtimePesaguard.Messaging.EventHandler do
     end
   end
 
-  defp deliver_or_raise(event, attempt \\ 1)
-  defp deliver_or_raise(event, attempt) when attempt <= 3 do
+  defp deliver_or_raise(event) do
+    event_id = event["event_id"]
+    tenant_id = event["tenant_id"]
+
+    case IdempotencyGuard.claim(event_id, tenant_id) do
+      :ok ->
+        case deliver_with_retry(event, 1) do
+          :ok ->
+            case IdempotencyGuard.complete(event_id, tenant_id) do
+              :ok -> :ok
+              {:error, reason} ->
+                Logger.error("Realtime idempotency completion failed: #{inspect(reason)}")
+                exit(:idempotency_completion_failed)
+            end
+
+          {:error, reason} ->
+            _ = IdempotencyGuard.release(event_id, tenant_id)
+            Logger.error("Realtime event delivery failed after retries: #{inspect(reason)}")
+            exit(:event_delivery_failed)
+        end
+
+      {:error, :duplicate} ->
+        :duplicate
+
+      {:error, reason} ->
+        Logger.error("Realtime idempotency claim failed: #{inspect(reason)}")
+        exit(:idempotency_claim_failed)
+    end
+  end
+
+  defp deliver_with_retry(event, attempt) when attempt <= 3 do
     case Broadcaster.broadcast(event["tenant_id"], event) do
       :ok ->
         :ok
 
       {:error, _reason} when attempt < 3 ->
         Process.sleep(attempt * 200)
-        deliver_or_raise(event, attempt + 1)
+        deliver_with_retry(event, attempt + 1)
 
       {:error, reason} ->
-        Logger.error("Realtime event delivery failed after retries: #{inspect(reason)}")
-        exit(:event_delivery_failed)
+        {:error, reason}
     end
   end
 
