@@ -1,6 +1,8 @@
 defmodule RealtimePesaguardWeb.HealthController do
   use Phoenix.Controller, formats: [:json], layouts: []
 
+  alias RealtimePesaguard.Accounts.BackendAuthClient
+
   @required_processes [
     RealtimePesaguard.Finch,
     RealtimePesaguard.Security.RateLimiter,
@@ -46,9 +48,7 @@ defmodule RealtimePesaguardWeb.HealthController do
   end
 
   defp add_missing_auth_configuration(reasons) do
-    url = Application.get_env(:realtime_pesaguard, :auth_validation_url)
-
-    if is_binary(url) and String.starts_with?(url, "https://") do
+    if BackendAuthClient.configured?() do
       reasons
     else
       ["identity_verifier_not_configured" | reasons]
