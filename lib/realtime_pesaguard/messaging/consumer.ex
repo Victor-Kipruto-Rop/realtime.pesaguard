@@ -104,7 +104,13 @@ defmodule RealtimePesaguard.Messaging.Consumer do
   defp start_client(true, _endpoints), do: :ok
 
   defp start_client(false, endpoints) do
-    :brod.start_client(endpoints, @client_id, allow_topic_auto_creation: false)
+    case :brod.start_client(endpoints, @client_id, allow_topic_auto_creation: false) do
+      :ok -> :ok
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+      {:error, :already_started} -> :ok
+      other -> other
+    end
   end
 
   defp broker_endpoints do
