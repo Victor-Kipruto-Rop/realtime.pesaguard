@@ -28,11 +28,27 @@ defmodule RealtimePesaguard.Accounts.BackendAuthClient do
 
   def validate(_), do: {:error, :invalid_token}
 
+  @doc false
+  def configured?, do: match?({:ok, _url}, configured_url())
+
   defp configured_url do
     case Application.get_env(:realtime_pesaguard, :auth_validation_url) do
       url when is_binary(url) and byte_size(url) > 0 ->
         uri = URI.parse(url)
-        if uri.scheme == "https" and is_binary(uri.host) do
+        environment = System.get_env("PESAGUARD_ENVIRONMENT", "production")
+        safe_target =
+          uri.path == "/auth/verify" and is_nil(uri.userinfo) and
+            is_nil(uri.fragment) and is_nil(uri.query) and
+            is_binary(uri.host) and uri.host != ""
+
+        secure_https = uri.scheme == "https" and safe_target
+        local_development_http =
+          environment in ["development", "test"] and
+            uri.scheme == "http" and
+            uri.host in ["dashboard_api", "localhost", "127.0.0.1", "::1"] and
+            safe_target
+
+        if secure_https or local_development_http do
           {:ok, url}
         else
           {:error, :identity_verifier_not_configured}

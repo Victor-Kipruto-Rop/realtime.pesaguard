@@ -9,6 +9,7 @@ defmodule RealtimePesaguard.Application do
       RealtimePesaguard.Events.IdempotencyGuard,
       RealtimePesaguard.Accounts.SocketSessionMonitor,
       {Phoenix.PubSub, name: RealtimePesaguard.PubSub},
+      RealtimePesaguard.Messaging.Consumer,
       RealtimePesaguardWeb.Endpoint
     ]
 

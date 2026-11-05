@@ -27,6 +27,25 @@ defmodule RealtimePesaguardWeb.TenantChannelTest do
              )
   end
 
+  test "subscribes the authorized process to its verified tenant event topic" do
+    assert {:ok, _socket} =
+             TenantChannel.join(
+               "tenant:tenant-a:transactions",
+               %{},
+               socket_with_claims(authorized_claims())
+             )
+
+    event = %{"event_id" => "evt-channel-test", "tenant_id" => "tenant-a"}
+    assert :ok =
+             Phoenix.PubSub.broadcast(
+               RealtimePesaguard.PubSub,
+               "tenant:tenant-a:transactions",
+               {:pesaguard_event, event}
+             )
+
+    assert_receive {:pesaguard_event, ^event}
+  end
+
   test "does not let join params override the verified tenant" do
     assert {:ok, _socket} =
              TenantChannel.join(
