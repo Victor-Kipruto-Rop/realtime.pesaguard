@@ -43,16 +43,32 @@ defmodule RealtimePesaguard.Messaging.Consumer do
   def handle_info(:connect, %{enabled?: false} = state), do: {:noreply, state}
 
   def handle_info(:connect, state) do
-    with {:ok, endpoints} <- broker_endpoints(),
-         :ok <- start_client(state.client_started?, endpoints),
-         :ok <- ensure_topics_available(),
-         {:ok, subscriber} <- start_subscriber() do
-      Logger.info("Realtime event consumer connected to configured Redpanda topics")
-      Process.send_after(self(), :health_check, @health_check_ms)
-      {:noreply, %{state | client_started?: true, subscriber: subscriber, ready?: true}}
-    else
+    case broker_endpoints() do
+      {:ok, endpoints} ->
+        case start_client(state.client_started?, endpoints) do
+          :ok ->
+            connected_state = %{state | client_started?: true}
+
+            with :ok <- ensure_topics_available(),
+                 {:ok, subscriber} <- start_subscriber() do
+              Logger.info("Realtime event consumer connected to configured Redpanda topics")
+              Process.send_after(self(), :health_check, @health_check_ms)
+              {:noreply, %{connected_state | subscriber: subscriber, ready?: true}}
+            else
+              {:error, reason} ->
+                Logger.warning("Realtime event consumer unavailable; retrying: #{inspect(reason)}")
+                Process.send_after(self(), :connect, @retry_ms)
+                {:noreply, %{connected_state | ready?: false}}
+            end
+
+          {:error, reason} ->
+            Logger.warning("Realtime Kafka client unavailable; retrying: #{inspect(reason)}")
+            Process.send_after(self(), :connect, @retry_ms)
+            {:noreply, %{state | ready?: false}}
+        end
+
       {:error, reason} ->
-        Logger.warning("Realtime event consumer unavailable; retrying: #{inspect(reason)}")
+        Logger.warning("Realtime Kafka configuration unavailable; retrying: #{inspect(reason)}")
         Process.send_after(self(), :connect, @retry_ms)
         {:noreply, %{state | ready?: false}}
     end
