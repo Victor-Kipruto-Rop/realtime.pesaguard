@@ -1,11 +1,11 @@
 # Build stage
-FROM hexpm/elixir:1.16.3-erlang-26.2.5-debian-bookworm-20240130-slim AS build
+FROM hexpm/elixir:1.16.3-erlang-26.2.5-debian-bookworm-20260610-slim AS build
 
 ENV MIX_ENV=prod
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential git \
+    && apt-get install -y --no-install-recommends build-essential cmake git \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mix local.hex --force && mix local.rebar --force
